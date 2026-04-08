@@ -20,7 +20,9 @@ export default function LoginScreen() {
   return (
     <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: '#1E1E2E', overflowY: 'auto' }}>
       <div style={{ padding: '48px 24px 24px', background: 'linear-gradient(180deg, #0D2B55, #1E1E2E)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-        <div style={{ width: 90, height: 90, borderRadius: 22, background: 'linear-gradient(135deg, #1A6FD6, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, marginBottom: 12, boxShadow: '0 0 30px rgba(26,111,214,0.5)' }}>🤜</div>
+        <div style={{ width: 90, height: 90, borderRadius: 22, overflow: 'hidden', marginBottom: 12, boxShadow: '0 0 30px rgba(26,111,214,0.5)' }}>
+          <img src="/knockai-logo.jpeg" alt="KnockAI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
         <div style={{ fontSize: 28, fontWeight: 900, color: '#fff' }}>KnockAI</div>
         <p style={{ color: '#9CA3AF', fontSize: 15 }}>Sign in to your account</p>
       </div>

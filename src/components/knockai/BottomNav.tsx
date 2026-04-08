@@ -21,7 +21,9 @@ export default function BottomNav({ isDesktop = false }: { isDesktop?: boolean }
     return (
       <div style={{ width: 220, flexShrink: 0, background: '#0D2B55', borderRight: '1px solid rgba(26,111,214,0.2)', display: 'flex', flexDirection: 'column', padding: '32px 0 24px' }}>
         <div style={{ paddingLeft: 20, marginBottom: 40, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #1A6FD6, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🤜</div>
+          <div style={{ width: 44, height: 44, borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
+              <img src="/knockai-logo.jpeg" alt="KnockAI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: -0.5 }}>Knock<span style={{ color: '#1A6FD6' }}>AI</span></div>
             <div style={{ fontSize: 11, color: '#6B7280' }}>Door-to-door platform</div>

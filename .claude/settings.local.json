@@ -8,7 +8,16 @@
       "Bash(npm pkg:*)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(vercel --version)"
+      "Bash(vercel --version)",
+      "Bash(vercel deploy:*)",
+      "Bash(vercel alias:*)",
+      "Bash(vercel teams:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(cp \"/Users/tristanpelletier/Pictures/Photos Library.photoslibrary/resources/derivatives/B/B1AF32A0-82A6-4DB8-A8AF-765056ADE0DE_1_105_c.jpeg\" \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/public/knockai-logo.jpeg\")",
+      "Bash(cp \"/Users/tristanpelletier/Pictures/Photos Library.photoslibrary/originals/8/8D622439-7430-4780-85E1-21557DBEA176.png\" \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/public/knockai-icon.png\")",
+      "Bash(mkdir -p \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/public\")",
+      "Bash(mv \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/logo1.jpeg\" \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/public/knockai-logo.jpeg\")",
+      "Bash(mv \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/logo2.png\" \"/Users/tristanpelletier/CLAUDE PROJECT 1/KnockAI/public/knockai-icon.png\")"
     ]
   }
 }

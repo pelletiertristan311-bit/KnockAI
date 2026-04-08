@@ -28,7 +28,9 @@ export default function SignUpScreen() {
       <div style={{ padding: '48px 24px 24px', background: 'linear-gradient(180deg, #0D2B55, #1E1E2E)' }}>
         <button onClick={() => setAuthScreen('login')} style={{ background: 'none', border: 'none', color: '#1A6FD6', cursor: 'pointer', marginBottom: 12, fontSize: 15 }}>← Back</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1A6FD6, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>🤜</div>
+          <div style={{ width: 52, height: 52, borderRadius: 14, overflow: 'hidden' }}>
+            <img src="/knockai-logo.jpeg" alt="KnockAI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
           <div>
             <div style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>Create Account</div>
             <p style={{ color: '#9CA3AF', fontSize: 13, marginTop: 2 }}>Your data is saved to the cloud</p>

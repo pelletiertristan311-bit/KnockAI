@@ -5,9 +5,11 @@ export const metadata: Metadata = {
   title: "KnockAI",
   description: "Door-to-door sales intelligence app",
   icons: {
-    icon: "/icon.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/knockai-icon.png",
+    apple: "/knockai-icon.png",
+    shortcut: "/knockai-icon.png",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
