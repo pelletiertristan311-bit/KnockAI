@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon: #00B4FF;
+  --neon-bright: #33C9FF;
+  --neon-dim: rgba(0,180,255,0.15);
+  --cyan: #00FFD1;
+  --bg: #030308;
+  --bg-card: rgba(10,10,28,0.8);
+  --border: rgba(0,180,255,0.12);
+  --border-hover: rgba(0,180,255,0.45);
+  --text: #e2eaf4;
+  --text-muted: #506070;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: #030308;
+  color: #e2eaf4;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.3); border-radius: 2px; }

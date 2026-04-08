@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes --name knockai)",
+      "Bash(npm init:*)",
+      "Bash(npm pkg:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(vercel --version)"
+    ]
+  }
+}
