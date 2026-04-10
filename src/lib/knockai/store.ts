@@ -491,9 +491,14 @@ export const useKnockAIStore = create<KnockAIState>()(
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
       },
 
-      updateTeam: (updates) => set((state) => ({
-        team: state.team ? { ...state.team, ...updates } : null,
-      })),
+      updateTeam: (updates) => {
+        set((state) => ({
+          team: state.team ? { ...state.team, ...updates } : null,
+        }));
+        const s = get();
+        if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.chatMessages, s.routes, s.team);
+        if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
+      },
 
       updateMemberRole: (userId, role) => set((state) => ({
         teamMembers: state.teamMembers.map((m) => m.id === userId ? { ...m, role } : m),
@@ -636,7 +641,7 @@ export const useKnockAIStore = create<KnockAIState>()(
           ...(data.teamMembers && data.teamMembers.length > 0 && { teamMembers: data.teamMembers }),
           ...(data.chatMessages && { chatMessages: data.chatMessages }),
           ...(data.routes && { routes: data.routes }),
-          ...(data.team && { team: data.team }),
+          ...(data.team && { team: { ...data.team, logoUrl: data.team.logoUrl || state.team?.logoUrl } }),
         }));
       },
     }),
