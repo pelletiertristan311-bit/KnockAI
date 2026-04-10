@@ -1,6 +1,6 @@
 'use client';
-import { useState, useRef } from 'react';
-import { useKnockAIStore, UserRole } from '@/lib/knockai/store';
+import { useState, useRef, useCallback } from 'react';
+import { useKnockAIStore, UserRole, PinType } from '@/lib/knockai/store';
 
 const LANG_OPTIONS = [
   { code: 'fr', label: 'Français' },
@@ -17,7 +17,7 @@ const T: Record<string, Record<string, string>> = {
     mapTheme: 'Map Theme', dark: 'Dark', light: 'Light', km: 'Kilometers', miles: 'Miles',
     pushNotif: 'Push Notifications', chatNotif: 'Chat Notifications',
     routeNotif: 'Route Alerts', aiAlerts: 'AI Alerts',
-    exportStats: 'Export Stats (CSV)', exportPins: 'Export Pins (CSV)',
+    exportStats: 'Export Stats (Excel)', exportPins: 'Export Pins (Excel)',
     changePassword: 'Change Password', teamInfo: 'Team Info',
     inviteCode: 'Invite Code', leaveTeam: 'Leave Team', createTeam: 'Create a Team',
     joinTeam: 'Join a Team', noTeam: 'No team yet',
@@ -37,7 +37,7 @@ const T: Record<string, Record<string, string>> = {
     mapTheme: 'Thème de carte', dark: 'Sombre', light: 'Clair', km: 'Kilomètres', miles: 'Miles',
     pushNotif: 'Notifications Push', chatNotif: 'Notifications Chat',
     routeNotif: 'Alertes de route', aiAlerts: 'Alertes IA',
-    exportStats: 'Exporter les stats (CSV)', exportPins: 'Exporter les pins (CSV)',
+    exportStats: 'Exporter les stats (Excel)', exportPins: 'Exporter les pins (Excel)',
     changePassword: 'Changer le mot de passe', teamInfo: 'Info équipe',
     inviteCode: 'Code d\'invitation', leaveTeam: 'Quitter l\'équipe', createTeam: 'Créer une équipe',
     joinTeam: 'Rejoindre une équipe', noTeam: 'Pas d\'équipe',
@@ -57,7 +57,7 @@ const T: Record<string, Record<string, string>> = {
     mapTheme: 'Tema del mapa', dark: 'Oscuro', light: 'Claro', km: 'Kilómetros', miles: 'Millas',
     pushNotif: 'Notificaciones Push', chatNotif: 'Notificaciones Chat',
     routeNotif: 'Alertas de ruta', aiAlerts: 'Alertas IA',
-    exportStats: 'Exportar stats (CSV)', exportPins: 'Exportar pins (CSV)',
+    exportStats: 'Exportar stats (Excel)', exportPins: 'Exportar pins (Excel)',
     changePassword: 'Cambiar contraseña', teamInfo: 'Info del equipo',
     inviteCode: 'Código de invitación', leaveTeam: 'Dejar el equipo', createTeam: 'Crear equipo',
     joinTeam: 'Unirse a equipo', noTeam: 'Sin equipo',
@@ -90,6 +90,20 @@ export default function SettingsScreen() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showPinExportModal, setShowPinExportModal] = useState(false);
+  const teamLogoRef = useRef<HTMLInputElement>(null);
+
+  const handleTeamLogoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      if (url) updateTeam({ logoUrl: url });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, [updateTeam]);
 
   const roleLabel: Record<UserRole, string> = { member: t.member, manager: t.manager, owner: t.owner };
 
@@ -107,11 +121,7 @@ export default function SettingsScreen() {
     setNameError('');
   };
 
-  const handleExportPins = () => {
-    const rows = [['ID', 'Type', 'Address', 'Lead', 'Phone', 'Notes', 'Placed At', 'Placed By']];
-    pins.forEach((p) => rows.push([p.id, p.type, p.address, p.leadName || '', p.phone || '', p.notes || '', p.placedAt, p.placedByName]));
-    downloadCSV(rows, 'knockai-pins.csv');
-  };
+  const handleExportPins = () => setShowPinExportModal(true);
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: '#0F172A', paddingBottom: 40 }}>
@@ -121,7 +131,7 @@ export default function SettingsScreen() {
       </div>
 
       {/* Profile Card */}
-      <div style={{ margin: '0 16px 16px', padding: 20, borderRadius: 16, background: 'linear-gradient(135deg, #1A3A6B, #0D2B55)', border: '1px solid rgba(26,111,214,0.3)' }}>
+      <div data-tour="settings-profile" style={{ margin: '0 16px 16px', padding: 20, borderRadius: 16, background: 'linear-gradient(135deg, #1A3A6B, #0D2B55)', border: '1px solid rgba(26,111,214,0.3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #1A6FD6, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, overflow: 'hidden' }}>
             {user?.profilePhotoUrl ? <img src={user.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
@@ -163,6 +173,22 @@ export default function SettingsScreen() {
         {team ? (
           <>
             <SettingRow label={t.teamInfo} value={team.name} />
+            {/* Team Logo */}
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                {team.logoUrl
+                  ? <img src={team.logoUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : '🏆'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, color: '#E5E7EB', fontWeight: 600 }}>Logo de l&apos;équipe</div>
+                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>JPG, PNG — affiché à tous les membres</div>
+              </div>
+              <button onClick={() => teamLogoRef.current?.click()} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(26,111,214,0.4)', background: 'rgba(26,111,214,0.1)', color: '#1A6FD6', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                Modifier
+              </button>
+              <input ref={teamLogoRef} type="file" accept="image/*" onChange={handleTeamLogoChange} style={{ display: 'none' }} />
+            </div>
             <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>{t.inviteCode}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -182,7 +208,7 @@ export default function SettingsScreen() {
       </Section>
 
       {/* Preferences Section */}
-      <Section title={t.preferences}>
+      <div data-tour="settings-notifs"><Section title={t.preferences}>
         <ToggleRow label={t.pushNotif} value={notifications.push} onChange={(v) => setNotifications({ push: v })} />
         <ToggleRow label={t.chatNotif} value={notifications.chat} onChange={(v) => setNotifications({ chat: v })} />
         <ToggleRow label={t.routeNotif} value={notifications.routes} onChange={(v) => setNotifications({ routes: v })} />
@@ -225,7 +251,7 @@ export default function SettingsScreen() {
         </div>
 
         <ToggleRow label={t.aiAssist} value={user?.aiEnabled ?? true} onChange={(v) => updateUser({ aiEnabled: v })} />
-      </Section>
+      </Section></div>
 
       {/* Data & Export */}
       <Section title={t.dataExport}>
@@ -262,6 +288,7 @@ export default function SettingsScreen() {
       {showPasswordModal && <PasswordModal onClose={() => setShowPasswordModal(false)} t={t} />}
       {showTeamModal && <TeamJoinCreateModal onClose={() => setShowTeamModal(false)} t={t} team={team} createTeam={createTeam} joinTeam={joinTeam} />}
       {showExportModal && <ExportStatsModal onClose={() => setShowExportModal(false)} sessions={sessions} />}
+      {showPinExportModal && <ExportPinsModal onClose={() => setShowPinExportModal(false)} pins={pins} />}
       {showPrivacy && <TextModal onClose={() => setShowPrivacy(false)} title={t.privacy} body={PRIVACY_TEXT} />}
       {showTerms && <TextModal onClose={() => setShowTerms(false)} title={t.terms} body={TERMS_TEXT} />}
       {showLeaveConfirm && (
@@ -431,17 +458,21 @@ function ExportStatsModal({ onClose, sessions }: { onClose: () => void; sessions
     let filtered = sessions;
     if (from) filtered = filtered.filter((s) => new Date(s.clockInAt) >= new Date(from));
     if (to) filtered = filtered.filter((s) => new Date(s.clockInAt) <= new Date(to + 'T23:59:59'));
-    const rows = [['Date', 'Clock In', 'Clock Out', 'Duration (min)', 'Doors', 'Sales', 'Distance (m)']];
-    filtered.forEach((s) => rows.push([
-      s.date,
-      new Date(s.clockInAt).toLocaleTimeString(),
-      s.clockOutAt ? new Date(s.clockOutAt).toLocaleTimeString() : '',
-      String(Math.round((s.durationSeconds || 0) / 60)),
-      String(s.doorsKnocked),
-      String(s.salesMade),
-      String(Math.round(s.distanceMeters)),
-    ]));
-    downloadCSV(rows, 'knockai-stats.csv');
+
+    const rows = [
+      ['Date', 'Clock In', 'Clock Out', 'Duration (min)', 'Doors Knocked', 'Sales Made', 'Distance (m)'],
+      ...filtered.map((s) => [
+        s.date,
+        new Date(s.clockInAt).toLocaleTimeString(),
+        s.clockOutAt ? new Date(s.clockOutAt).toLocaleTimeString() : '',
+        Math.round((s.durationSeconds || 0) / 60),
+        s.doorsKnocked,
+        s.salesMade,
+        Math.round(s.distanceMeters),
+      ]),
+    ];
+
+    downloadExcel(rows, 'KnockAI Stats', 'knockai-stats.xlsx');
     onClose();
   };
 
@@ -449,7 +480,117 @@ function ExportStatsModal({ onClose, sessions }: { onClose: () => void; sessions
     <CenteredModal onClose={onClose} title="Export Stats">
       <ModalInput label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
       <ModalInput label="To" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-      <button onClick={handleExport} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: '#10B981', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15 }}>Download CSV</button>
+      <button onClick={handleExport} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: '#10B981', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <span>📊</span> Télécharger Excel (.xlsx)
+      </button>
+    </CenteredModal>
+  );
+}
+
+/* ─── Pin Filter Options ─── */
+
+const PIN_FILTER_OPTIONS: { value: PinType | 'all'; label: string; emoji: string; color: string }[] = [
+  { value: 'all',            label: 'Tous les pins',    emoji: '📍', color: '#6B7280' },
+  { value: 'sale',           label: 'Ventes',           emoji: '✓',  color: '#34D399' },
+  { value: 'not_interested', label: 'Non intéressés',   emoji: '✕',  color: '#EF4444' },
+  { value: 'call_back',      label: 'Rappels',          emoji: '?',  color: '#F59E0B' },
+  { value: 'ai_knocked',     label: 'IA Knocké',        emoji: '🤖', color: '#3B82F6' },
+];
+
+const PIN_TYPE_LABELS: Record<string, string> = {
+  sale: 'Vente',
+  not_interested: 'Non intéressé',
+  call_back: 'Rappel',
+  ai_knocked: 'IA Knocké',
+};
+
+function ExportPinsModal({ onClose, pins }: { onClose: () => void; pins: any[] }) {
+  const [filter, setFilter] = useState<PinType | 'all'>('all');
+
+  const filteredPins = filter === 'all' ? pins : pins.filter((p) => p.type === filter);
+  const count = filteredPins.length;
+
+  const handleExport = () => {
+    const rows = [
+      ['Date', 'Heure', 'Type', 'Adresse', 'Latitude', 'Longitude', 'Nom du lead', 'Notes'],
+      ...filteredPins.map((p) => {
+        const d = new Date(p.placedAt);
+        return [
+          d.toLocaleDateString('fr-CA'),
+          d.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+          PIN_TYPE_LABELS[p.type] || p.type,
+          p.address,
+          p.lat,
+          p.lng,
+          p.leadName || '',
+          p.notes || '',
+        ];
+      }),
+    ];
+
+    const label = filter === 'all' ? 'Tous' : PIN_TYPE_LABELS[filter] || filter;
+    downloadExcel(rows, `Pins - ${label}`, `knockai-pins-${filter}.xlsx`);
+    onClose();
+  };
+
+  return (
+    <CenteredModal onClose={onClose} title="Exporter les pins">
+      <p style={{ color: '#9CA3AF', fontSize: 13, marginBottom: 16 }}>
+        Choisissez quels pins exporter :
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+        {PIN_FILTER_OPTIONS.map((opt) => {
+          const selected = filter === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setFilter(opt.value)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                border: `2px solid ${selected ? opt.color : 'rgba(255,255,255,0.08)'}`,
+                background: selected ? `${opt.color}18` : 'rgba(255,255,255,0.03)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                background: opt.color, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: opt.value === 'all' ? 16 : 14,
+                fontWeight: 900, color: '#fff',
+              }}>
+                {opt.emoji}
+              </div>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: selected ? '#fff' : '#D1D5DB', textAlign: 'left' }}>
+                {opt.label}
+              </span>
+              {selected && (
+                <span style={{ fontSize: 16, color: opt.color }}>✓</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', marginBottom: 16, fontSize: 13, color: '#9CA3AF', textAlign: 'center' }}>
+        {count === 0
+          ? 'Aucun pin à exporter pour ce filtre'
+          : `${count} pin${count > 1 ? 's' : ''} sera${count > 1 ? 'ont' : ''} exporté${count > 1 ? 's' : ''}`}
+      </div>
+
+      <button
+        onClick={handleExport}
+        disabled={count === 0}
+        style={{
+          width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+          background: count === 0 ? '#374151' : 'linear-gradient(135deg, #1A6FD6, #3B82F6)',
+          color: '#fff', fontWeight: 700, cursor: count === 0 ? 'default' : 'pointer',
+          fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}
+      >
+        <span>📥</span> Télécharger Excel (.xlsx)
+      </button>
     </CenteredModal>
   );
 }
@@ -487,54 +628,123 @@ function smallBtn(bg: string): React.CSSProperties {
   return { padding: '6px 14px', borderRadius: 8, border: 'none', background: bg, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' };
 }
 
-function downloadCSV(rows: string[][], filename: string) {
-  const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+function downloadExcel(rows: (string | number)[][], sheetName: string, filename: string) {
+  // Pure browser SpreadsheetML — no npm library needed, opens natively in Excel/Numbers/LibreOffice
+  const esc = (v: string | number) =>
+    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Size="11"/><Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#FFFFFF"/></Style></Styles>\n<Worksheet ss:Name="${esc(sheetName.slice(0, 31))}">\n<Table>\n`;
+
+  rows.forEach((row, rowIdx) => {
+    xml += '<Row>\n';
+    row.forEach((cell) => {
+      const isNum = typeof cell === 'number';
+      const style = rowIdx === 0 ? ' ss:StyleID="h"' : '';
+      xml += `<Cell${style}><Data ss:Type="${isNum ? 'Number' : 'String'}">${esc(cell)}</Data></Cell>\n`;
+    });
+    xml += '</Row>\n';
+  });
+
+  xml += '</Table>\n</Worksheet>\n</Workbook>';
+
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = filename.replace('.xlsx', '.xls');
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-const PRIVACY_TEXT = `KnockAI Privacy Policy
+const PRIVACY_TEXT = `KnockAI — Privacy Policy
+Version 1.2 | Last updated: April 8, 2026
 
-Last updated: 2024-01-01
+KnockAI is a door-to-door sales management platform. We take your privacy seriously. This policy explains what data we collect, how we use it, and your rights.
 
-1. Data Collection
-We collect location data, door-knocking activity, and team communication data to provide our service.
+1. DATA WE COLLECT
+• Location data (GPS) — used to display your position on the map and generate walking trails while you are clocked in.
+• Activity data — doors knocked, sales made, call-backs, sessions (clock-in/out times, duration, distance).
+• Team data — team name, invite codes, member roles, chat messages, and shared routes.
+• Account data — your name, email address, and profile photo.
+• Device data — browser type and approximate time zone, for session management only.
 
-2. Data Usage
-Your data is used to power AI route suggestions, team features, and performance analytics.
+2. HOW WE USE YOUR DATA
+• To power real-time team features (live map, member status, leaderboard).
+• To generate AI-powered territory suggestions based on your knock history.
+• To produce performance analytics (stats, session history, exports).
+• To synchronize your data across devices via secure cloud storage (Upstash Redis).
 
-3. Data Storage
-Data is stored securely using encrypted cloud storage. You may export or delete your data at any time.
+3. DATA STORAGE & SECURITY
+All data is encrypted in transit (HTTPS/TLS) and at rest. We use Upstash Redis hosted in a SOC 2-compliant environment. Local data is also stored in your browser (localStorage) for offline functionality.
 
-4. Third Parties
-We do not sell your data to third parties. Analytics are processed internally.
+4. DATA RETENTION
+Your data is retained for as long as your account is active. You can export your data at any time from Settings → Data & Export. You may request full deletion by contacting support@knockai.com.
 
-5. Contact
-For privacy questions, contact privacy@knockai.com`;
+5. THIRD PARTIES
+We do not sell, rent, or share your personal data with third parties for advertising. We use Upstash (cloud storage) as a sub-processor — they are bound by a data processing agreement.
 
-const TERMS_TEXT = `KnockAI Terms of Service
+6. YOUR RIGHTS
+You have the right to access, correct, export, or delete your personal data at any time. Contact privacy@knockai.com to exercise these rights.
 
-Last updated: 2024-01-01
+7. CHILDREN
+KnockAI is intended for professional use only and is not directed at users under the age of 16.
 
-1. Acceptance
-By using KnockAI, you agree to these terms.
+8. CHANGES TO THIS POLICY
+We will notify users of material changes via in-app notification. Continued use of the app constitutes acceptance of the updated policy.
 
-2. Use of Service
-KnockAI is for professional door-to-door sales teams. Unauthorized use is prohibited.
+9. CONTACT
+For privacy questions: privacy@knockai.com`;
 
-3. Data Ownership
-You own your data. KnockAI has a license to process it to provide the service.
 
-4. Liability
-KnockAI is provided as-is. We are not liable for sales outcomes.
+const TERMS_TEXT = `KnockAI — Terms of Service
+Version 1.2 | Last updated: April 8, 2026
 
-5. Termination
-We reserve the right to terminate accounts that violate these terms.
+Please read these Terms of Service carefully before using KnockAI. By accessing or using the app, you agree to be bound by these terms.
 
-6. Contact
-legal@knockai.com`;
+1. ACCEPTANCE OF TERMS
+By creating an account or using KnockAI (the "App"), you confirm that you have read, understood, and agree to these Terms. If you do not agree, do not use the App.
+
+2. DESCRIPTION OF SERVICE
+KnockAI is a professional platform designed for door-to-door sales teams. It provides tools for session tracking, map-based pin logging, team management, real-time communication, and AI-assisted territory optimization.
+
+3. ELIGIBILITY
+You must be at least 16 years old and authorized by your employer or organization to use KnockAI. The App is intended for professional business use only.
+
+4. USER ACCOUNTS
+You are responsible for maintaining the confidentiality of your login credentials. You agree to notify us immediately at support@knockai.com if you suspect unauthorized access to your account. We reserve the right to suspend accounts that show signs of abuse or unauthorized activity.
+
+5. ACCEPTABLE USE
+You agree not to:
+• Use the App for any unlawful purpose or in violation of local regulations.
+• Harass, threaten, or harm other users through the team chat or any other feature.
+• Attempt to reverse-engineer, decompile, or interfere with the App's infrastructure.
+• Upload content that is offensive, defamatory, or infringes third-party intellectual property rights.
+
+6. DATA OWNERSHIP
+You own the data you input into KnockAI (pins, sessions, notes, etc.). By using the App, you grant KnockAI a limited license to process and store that data solely to provide the service described above.
+
+7. AI FEATURES
+KnockAI includes AI-powered territory suggestions based on your historical activity. These suggestions are informational only and do not guarantee sales outcomes. KnockAI makes no warranty as to the accuracy or profitability of AI recommendations.
+
+8. INTELLECTUAL PROPERTY
+KnockAI and all associated branding, design, and code are the intellectual property of KnockAI and its licensors. You may not copy, reproduce, or distribute any part of the App without prior written consent.
+
+9. DISCLAIMER OF WARRANTIES
+The App is provided "as-is" without warranties of any kind, express or implied. We do not warrant that the App will be uninterrupted, error-free, or free of viruses. We are not liable for any sales outcomes, lost commissions, or business losses resulting from use of the App.
+
+10. LIMITATION OF LIABILITY
+To the maximum extent permitted by applicable law, KnockAI's total liability for any claim arising from use of the App shall not exceed the amount paid by you (if any) in the 12 months preceding the claim.
+
+11. TERMINATION
+We reserve the right to suspend or terminate accounts that violate these Terms. You may delete your account at any time by contacting support@knockai.com.
+
+12. CHANGES TO TERMS
+We may update these Terms from time to time. Material changes will be communicated via in-app notification. Continued use of the App after changes take effect constitutes acceptance of the new Terms.
+
+13. GOVERNING LAW
+These Terms are governed by the laws of the Province of Quebec, Canada, without regard to conflict of law principles.
+
+14. CONTACT
+For legal inquiries: legal@knockai.com`;

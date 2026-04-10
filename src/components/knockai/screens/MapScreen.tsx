@@ -329,7 +329,7 @@ export default function MapScreen() {
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-      <div ref={mapRef} style={{ width: '100%', height: '100%', cursor: isErasing ? 'crosshair' : 'default' }} />
+      <div ref={mapRef} data-tour="map-area" style={{ width: '100%', height: '100%', cursor: isErasing ? 'crosshair' : 'default' }} />
 
       {mapError && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0D2B55 0%, #1E1E2E 100%)', padding: 24, gap: 16 }}>
@@ -346,7 +346,7 @@ export default function MapScreen() {
       )}
 
       {/* Filter bar */}
-      <div style={{ position: 'absolute', top: 16, left: 12, right: 12, display: 'flex', gap: 6, zIndex: 10 }}>
+      <div data-tour="map-filter" style={{ position: 'absolute', top: 16, left: 12, right: 12, display: 'flex', gap: 6, zIndex: 10 }}>
         <button onClick={() => setPinFilter('all')} style={{ flex: 1, padding: '7px 4px', borderRadius: 10, border: 'none', cursor: 'pointer', background: pinFilter === 'all' ? '#1A6FD6' : 'rgba(13,43,85,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <div style={{ display: 'flex', gap: 2 }}><div style={{ width: 7, height: 7, borderRadius: '50%', background: '#34D399' }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444' }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: '#F59E0B' }} /></div>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>All</span>
@@ -390,7 +390,7 @@ export default function MapScreen() {
       </div>
 
       {/* AI toggle */}
-      <div style={{ position: 'absolute', bottom: 24, right: 12, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <div data-tour="map-ai" style={{ position: 'absolute', bottom: 24, right: 12, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         <button onClick={toggleAI} style={{ width: 56, height: 56, borderRadius: 28, border: 'none', cursor: 'pointer', background: aiEnabled ? '#3B82F6' : '#374151', color: '#fff', boxShadow: aiEnabled ? '0 4px 16px rgba(0,102,204,0.5)' : 'none', transition: 'all 0.3s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           <span style={{ fontSize: 16 }}>🤖</span>
           <span style={{ fontSize: 9, fontWeight: 800 }}>{aiEnabled ? 'AI ON' : 'AI OFF'}</span>

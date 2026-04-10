@@ -14,6 +14,7 @@ import BottomNav from './BottomNav';
 import AddPinModal from './modals/AddPinModal';
 import EditPinModal from './modals/EditPinModal';
 import StatsModal from './modals/StatsModal';
+import DemoTutorialOverlay from './DemoTutorialOverlay';
 
 export default function KnockAIApp() {
   const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pollTeamData } = useKnockAIStore();
@@ -106,6 +107,7 @@ export default function KnockAIApp() {
             {activeTab === 'team' && <TeamScreen />}
             {activeTab === 'map' && <MapScreen />}
             {activeTab === 'settings' && <SettingsScreen />}
+            <DemoTutorialOverlay />
           </div>
           {addPinModal.open && <AddPinModal />}
           {editPinModal.open && editPinModal.pin && <EditPinModal />}
@@ -125,6 +127,7 @@ export default function KnockAIApp() {
           {activeTab === 'team' && <TeamScreen />}
           {activeTab === 'map' && <MapScreen />}
           {activeTab === 'settings' && <SettingsScreen />}
+          <DemoTutorialOverlay />
         </div>
         <BottomNav />
         {addPinModal.open && <AddPinModal />}

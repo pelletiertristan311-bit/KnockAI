@@ -362,7 +362,12 @@ export const useKnockAIStore = create<KnockAIState>()(
           salesMade: 0,
           date: now.split('T')[0],
         };
-        set({ isClockedIn: true, isPaused: false, clockInTime: now, pausedAt: null, accumulatedSeconds: 0, currentSession: session });
+        set((state) => ({
+          isClockedIn: true, isPaused: false, clockInTime: now, pausedAt: null, accumulatedSeconds: 0, currentSession: session,
+          teamMembers: state.user
+            ? state.teamMembers.map((m) => m.id === state.user!.id ? { ...m, isOnline: true } : m)
+            : state.teamMembers,
+        }));
       },
 
       clockOut: () => {
@@ -380,6 +385,9 @@ export const useKnockAIStore = create<KnockAIState>()(
         set((state) => ({
           isClockedIn: false, isPaused: false, clockInTime: null, pausedAt: null, accumulatedSeconds: 0, currentSession: null,
           sessions: [...state.sessions, completed],
+          teamMembers: state.user
+            ? state.teamMembers.map((m) => m.id === state.user!.id ? { ...m, isOnline: false } : m)
+            : state.teamMembers,
         }));
         const s = get();
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
@@ -471,8 +479,12 @@ export const useKnockAIStore = create<KnockAIState>()(
       updateUser: (updates) => {
         set((state) => ({
           user: state.user ? { ...state.user, ...updates } : null,
-          teamMembers: state.user && updates.fullName
-            ? state.teamMembers.map((m) => m.id === state.user!.id ? { ...m, fullName: updates.fullName! } : m)
+          teamMembers: state.user
+            ? state.teamMembers.map((m) => m.id === state.user!.id ? {
+                ...m,
+                ...(updates.fullName && { fullName: updates.fullName }),
+                ...(updates.profilePhotoUrl !== undefined && { profilePhotoUrl: updates.profilePhotoUrl }),
+              } : m)
             : state.teamMembers,
         }));
         const s = get();

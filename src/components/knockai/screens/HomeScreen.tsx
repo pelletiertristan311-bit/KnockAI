@@ -109,7 +109,7 @@ export default function HomeScreen() {
       </div>
 
       <div style={{ padding: '16px 16px 24px' }}>
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20 }} data-tour="clock-btn">
           <button
             onClick={isClockedIn ? clockOut : clockIn}
             style={{ width: '100%', padding: '18px', borderRadius: 16, border: 'none', cursor: 'pointer', background: isClockedIn ? 'linear-gradient(90deg, #EF4444, #DC2626)' : 'linear-gradient(90deg, #10B981, #059669)', color: '#fff', boxShadow: isClockedIn ? '0 4px 24px rgba(239,68,68,0.4)' : '0 4px 24px rgba(16,185,129,0.4)', transition: 'all 0.3s' }}
@@ -126,7 +126,7 @@ export default function HomeScreen() {
           {isClockedIn && startTimeLabel && <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280', marginTop: 6 }}>{startTimeLabel}</div>}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }} data-tour="home-stats">
           <StatCard icon="⏱" label="Time Worked" value={formatTime(timeWorkedToday)} color="#0D2B55" />
           <StatCard icon="🚪" label="Doors Knocked" value={String(todayPins.length)} color="#8B5CF6" />
           <StatCard icon="💰" label="Sales Made" value={String(todaySales)} color="#10B981" />
@@ -134,7 +134,7 @@ export default function HomeScreen() {
         </div>
 
         <h3 style={{ fontWeight: 700, marginBottom: 12, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 }}>Quick Actions</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }} data-tour="home-quick">
           {quickActions.map(({ label, icon, action }) => (
             <button key={label} onClick={action} style={{ padding: '16px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 22 }}>{icon}</span>
@@ -143,7 +143,7 @@ export default function HomeScreen() {
           ))}
         </div>
 
-        <div style={{ margin: '0 0 24px' }}>
+        <div style={{ margin: '0 0 24px' }} data-tour="home-goals">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 }}>Objectifs du jour</span>
             <button onClick={() => setShowGoalEditor(true)} style={{ fontSize: 11, color: '#1A6FD6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Modifier</button>

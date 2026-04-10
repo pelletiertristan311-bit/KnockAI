@@ -81,7 +81,7 @@ export default function TeamScreen() {
       {/* Tab Bar */}
       <div style={{ display: 'flex', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
         {tabs.map(({ id, label }) => (
-          <button key={id} onClick={() => setTeamTab(id)} style={{ flex: 1, padding: '10px 4px', background: 'none', border: 'none', borderBottom: `2px solid ${teamTab === id ? '#1A6FD6' : 'transparent'}`, color: teamTab === id ? '#1A6FD6' : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+          <button key={id} onClick={() => setTeamTab(id)} data-tour={`team-tab-${id}`} style={{ flex: 1, padding: '10px 4px', background: 'none', border: 'none', borderBottom: `2px solid ${teamTab === id ? '#1A6FD6' : 'transparent'}`, color: teamTab === id ? '#1A6FD6' : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
             {label}
           </button>
         ))}
@@ -104,16 +104,41 @@ function TeamHeader({ team, isManager, updateTeam, t, lang, rl, user }: any) {
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(team.name);
   const [copied, setCopied] = useState(false);
+  const [logoHover, setLogoHover] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isOwner = user?.role === 'owner';
 
   const handleShare = () => {
     navigator.clipboard?.writeText(team.inviteCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { updateTeam({ logoUrl: reader.result as string }); };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   return (
     <div style={{ padding: '20px 16px 0', background: 'linear-gradient(180deg, #0D2B55 0%, #0F172A 100%)', flexShrink: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-        <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>
-          {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 14 }} /> : '🏆'}
+        <div
+          style={{ position: 'relative', width: 52, height: 52, flexShrink: 0, cursor: isOwner ? 'pointer' : 'default' }}
+          onMouseEnter={() => isOwner && setLogoHover(true)}
+          onMouseLeave={() => setLogoHover(false)}
+          onClick={() => isOwner && fileInputRef.current?.click()}
+        >
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, overflow: 'hidden' }}>
+            {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 14 }} /> : '🏆'}
+          </div>
+          {isOwner && logoHover && (
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 14, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📷</div>
+          )}
+          {isOwner && (
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
+          )}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {editing ? (
