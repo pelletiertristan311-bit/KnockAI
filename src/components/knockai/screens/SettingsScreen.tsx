@@ -285,6 +285,12 @@ export default function SettingsScreen() {
         </button>
       </div>
 
+      {/* Version */}
+      <div style={{ textAlign: 'center', padding: '20px 16px 8px', color: '#374151' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>KnockAI v1.2</div>
+        <div style={{ fontSize: 11, marginTop: 3 }}>Dernière mise à jour : 10 avril 2026</div>
+      </div>
+
       {/* Modals */}
       {showPasswordModal && <PasswordModal onClose={() => setShowPasswordModal(false)} t={t} />}
       {showTeamModal && <TeamJoinCreateModal onClose={() => setShowTeamModal(false)} t={t} team={team} createTeam={createTeam} joinTeam={joinTeam} />}
