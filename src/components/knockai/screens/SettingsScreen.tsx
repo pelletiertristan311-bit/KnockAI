@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { useKnockAIStore, UserRole, PinType } from '@/lib/knockai/store';
 
 const LANG_OPTIONS = [
@@ -629,33 +630,10 @@ function smallBtn(bg: string): React.CSSProperties {
 }
 
 function downloadExcel(rows: (string | number)[][], sheetName: string, filename: string) {
-  // Pure browser SpreadsheetML — no npm library needed, opens natively in Excel/Numbers/LibreOffice
-  const esc = (v: string | number) =>
-    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Size="11"/><Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#FFFFFF"/></Style></Styles>\n<Worksheet ss:Name="${esc(sheetName.slice(0, 31))}">\n<Table>\n`;
-
-  rows.forEach((row, rowIdx) => {
-    xml += '<Row>\n';
-    row.forEach((cell) => {
-      const isNum = typeof cell === 'number';
-      const style = rowIdx === 0 ? ' ss:StyleID="h"' : '';
-      xml += `<Cell${style}><Data ss:Type="${isNum ? 'Number' : 'String'}">${esc(cell)}</Data></Cell>\n`;
-    });
-    xml += '</Row>\n';
-  });
-
-  xml += '</Table>\n</Worksheet>\n</Workbook>';
-
-  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename.replace('.xlsx', '.xls');
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : filename + '.xlsx');
 }
 
 const PRIVACY_TEXT = `KnockAI — Privacy Policy
