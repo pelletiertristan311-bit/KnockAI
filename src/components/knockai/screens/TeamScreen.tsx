@@ -185,11 +185,10 @@ function MembersTab({ members, user, isManager, updateMemberRole, t, rl }: any) 
       {members.map((m: TeamMember) => (
         <div key={m.id} onClick={() => isManager && m.id !== user?.id ? setSelectedMember(m) : undefined}
           style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', cursor: isManager && m.id !== user?.id ? 'pointer' : 'default' }}>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{ flexShrink: 0 }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${ROLE_COLORS[m.role]}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, overflow: 'hidden' }}>
               {m.profilePhotoUrl ? <img src={m.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
             </div>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: m.isOnline ? '#10B981' : '#374151', border: '2px solid #0F172A' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
