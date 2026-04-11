@@ -34,6 +34,9 @@ async function pollTeamFromRedis(teamId: string): Promise<any | null> {
 export type PinType = 'sale' | 'not_interested' | 'call_back' | 'ai_knocked';
 export type UserRole = 'member' | 'manager' | 'owner';
 
+export interface TrashedPin extends Pin { deletedAt: string; }
+export interface TrashedTeam { team: Team; memberCount: number; deletedAt: string; }
+
 export interface Pin {
   id: string;
   userId: string;
@@ -173,6 +176,9 @@ interface KnockAIState {
   saleNotifications: SaleNotification[];
   trailPoints: TrailPoint[];
   trailView: 'mine' | 'team' | 'off';
+  trashedPins: TrashedPin[];
+  trashedTeams: TrashedTeam[];
+  teamSettings: { shareLocation: boolean; showMemberTrails: boolean; salesNotif: boolean; dailyGoalSync: boolean };
 
   setAuthScreen: (screen: KnockAIState['authScreen']) => void;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -205,6 +211,10 @@ interface KnockAIState {
   createTeam: (name: string) => Promise<void>;
   joinTeam: (code: string) => Promise<{ ok: boolean; error?: string }>;
   leaveTeam: () => void;
+  deleteTeam: () => void;
+  restorePin: (id: string) => void;
+  restoreTeam: (teamId: string) => void;
+  setTeamSettings: (s: Partial<KnockAIState['teamSettings']>) => void;
   addTrailPoint: (point: { lat: number; lng: number }) => void;
   removeTrailPointsNear: (lat: number, lng: number, radiusM: number) => void;
   clearMyTrail: () => void;
@@ -280,6 +290,9 @@ export const useKnockAIStore = create<KnockAIState>()(
       saleNotifications: [],
       trailPoints: [],
       trailView: 'mine',
+      trashedPins: [],
+      trashedTeams: [],
+      teamSettings: { shareLocation: true, showMemberTrails: true, salesNotif: true, dailyGoalSync: false },
 
       setAuthScreen: (screen) => set({ authScreen: screen }),
 
@@ -426,7 +439,27 @@ export const useKnockAIStore = create<KnockAIState>()(
       },
 
       deletePin: (id) => {
-        set((state) => ({ pins: state.pins.filter((p) => p.id !== id) }));
+        const pin = get().pins.find((p) => p.id === id);
+        const now = Date.now();
+        set((state) => ({
+          pins: state.pins.filter((p) => p.id !== id),
+          trashedPins: pin
+            ? [...state.trashedPins.filter((p) => now - new Date(p.deletedAt).getTime() < 30 * 86400000), { ...pin, deletedAt: new Date().toISOString() }]
+            : state.trashedPins,
+        }));
+        const s = get();
+        if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
+      },
+
+      restorePin: (id) => {
+        const { trashedPins } = get();
+        const pin = trashedPins.find((p) => p.id === id);
+        if (!pin) return;
+        const { deletedAt, ...restoredPin } = pin;
+        set((state) => ({
+          pins: [...state.pins, restoredPin],
+          trashedPins: state.trashedPins.filter((p) => p.id !== id),
+        }));
         const s = get();
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
       },
@@ -569,6 +602,34 @@ export const useKnockAIStore = create<KnockAIState>()(
         user: state.user ? { ...state.user, teamId: undefined, role: 'member' } : null,
       })),
 
+      deleteTeam: () => {
+        const { team, teamMembers } = get();
+        if (!team) return;
+        const now = Date.now();
+        const entry: TrashedTeam = { team, memberCount: teamMembers.length, deletedAt: new Date().toISOString() };
+        set((state) => ({
+          team: null,
+          teamMembers: [],
+          user: state.user ? { ...state.user, teamId: undefined, role: 'member' } : null,
+          trashedTeams: [...state.trashedTeams.filter((e) => now - new Date(e.deletedAt).getTime() < 30 * 86400000), entry],
+        }));
+      },
+
+      restoreTeam: (teamId) => {
+        const { trashedTeams } = get();
+        const entry = trashedTeams.find((e) => e.team.id === teamId);
+        if (!entry) return;
+        set((state) => ({
+          team: entry.team,
+          user: state.user ? { ...state.user, teamId: entry.team.id, role: 'owner' } : null,
+          trashedTeams: state.trashedTeams.filter((e) => e.team.id !== teamId),
+        }));
+        const s = get();
+        if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
+      },
+
+      setTeamSettings: (s) => set((state) => ({ teamSettings: { ...state.teamSettings, ...s } })),
+
       addTrailPoint: (point) => {
         const { user } = get();
         if (!user) return;
@@ -667,6 +728,9 @@ export const useKnockAIStore = create<KnockAIState>()(
         trailPoints: state.trailPoints,
         trailView: state.trailView,
         dailyGoals: state.dailyGoals,
+        trashedPins: state.trashedPins,
+        trashedTeams: state.trashedTeams,
+        teamSettings: state.teamSettings,
       }),
     }
   )
