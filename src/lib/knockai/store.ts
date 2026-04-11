@@ -522,6 +522,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         }));
         const s = get();
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, chatMessages: s.chatMessages, user: s.user });
+        if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.chatMessages, s.routes, s.team);
       },
 
       updateTeam: (updates) => {

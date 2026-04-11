@@ -166,6 +166,32 @@ function TeamHeader({ team, isManager, updateTeam, t, lang, rl, user }: any) {
   );
 }
 
+/* ─── Member Avatar ─── */
+function MemberAvatar({ member, size = 40 }: { member: TeamMember; size?: number }) {
+  const initials = member.fullName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const colors = ['#1A6FD6', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#8B5CF6'];
+  const color = colors[member.fullName.charCodeAt(0) % colors.length];
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: member.profilePhotoUrl ? 'transparent' : color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.36, fontWeight: 800, color: '#fff' }}>
+      {member.profilePhotoUrl
+        ? <img src={member.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        : initials}
+    </div>
+  );
+}
+
+/* ─── Chat Avatar ─── */
+function ChatAvatar({ name }: { name: string }) {
+  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const colors = ['#1A6FD6', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#8B5CF6'];
+  const color = colors[name.charCodeAt(0) % colors.length];
+  return (
+    <div style={{ width: 32, height: 32, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
+
 /* ─── Stat Card ─── */
 function StatCard({ value, label, color, small }: { value: number | string; label: string; color: string; small?: boolean }) {
   return (
@@ -185,11 +211,7 @@ function MembersTab({ members, user, isManager, updateMemberRole, t, rl }: any) 
       {members.map((m: TeamMember) => (
         <div key={m.id} onClick={() => isManager && m.id !== user?.id ? setSelectedMember(m) : undefined}
           style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', cursor: isManager && m.id !== user?.id ? 'pointer' : 'default' }}>
-          <div style={{ flexShrink: 0 }}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${ROLE_COLORS[m.role]}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, overflow: 'hidden' }}>
-              {m.profilePhotoUrl ? <img src={m.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
-            </div>
-          </div>
+          <MemberAvatar member={m} size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
               {m.fullName}
@@ -261,7 +283,7 @@ function ChatTab({ messages, user, sendChatMessage, t }: any) {
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
                 {!isMe && (
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1A3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>👤</div>
+                  <ChatAvatar name={msg.userName} />
                 )}
                 <div style={{ maxWidth: '75%' }}>
                   {!isMe && <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 3, paddingLeft: 4 }}>{msg.userName}</div>}
@@ -351,9 +373,7 @@ function LeaderboardTab({ members, pins, todayPins, statsMode, t }: any) {
           <div style={{ width: 30, textAlign: 'center', fontSize: i < 3 ? 22 : 14, fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
             {i < 3 ? medals[i] : `#${i + 1}`}
           </div>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: `${ROLE_COLORS[m.role]}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-            {m.profilePhotoUrl ? <img src={m.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '👤'}
-          </div>
+          <MemberAvatar member={m} size={36} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{m.fullName}</div>
             <div style={{ fontSize: 12, color: '#6B7280' }}>{m.doors} {t.doors} · {m.sales} {t.sales}</div>
