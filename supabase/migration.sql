@@ -49,6 +49,35 @@ CREATE POLICY "Allow all deletes" ON public.pins
 ALTER PUBLICATION supabase_realtime ADD TABLE public.pins;
 
 -- ============================================================
+-- drawings table (street drawing tool)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.drawings (
+  id TEXT PRIMARY KEY,
+  team_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  user_name TEXT,
+  coordinates JSONB NOT NULL,
+  color TEXT NOT NULL DEFAULT '#EF4444',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS drawings_team_id_idx ON public.drawings (team_id);
+
+ALTER TABLE public.drawings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all reads drawings" ON public.drawings;
+CREATE POLICY "Allow all reads drawings" ON public.drawings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow all inserts drawings" ON public.drawings;
+CREATE POLICY "Allow all inserts drawings" ON public.drawings FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all deletes drawings" ON public.drawings;
+CREATE POLICY "Allow all deletes drawings" ON public.drawings FOR DELETE USING (true);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.drawings;
+
+-- ============================================================
 -- DONE. Add these env vars to Vercel:
 --   NEXT_PUBLIC_SUPABASE_URL      = https://xxx.supabase.co
 --   NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJ...

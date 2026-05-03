@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useKnockAIStore, Pin, PinType } from '@/lib/knockai/store';
 import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
+import { useTeamDrawings, type TeamDrawing } from '@/hooks/knockai/useTeamDrawings';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -56,6 +57,14 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const isDrawingRef = useRef(false);
   const drawingPointsRef = useRef<[number, number][]>([]);
   const drawDotMarkersRef = useRef<any[]>([]);
+  const [isStreetDrawing, setIsStreetDrawing] = useState(false);
+  const isStreetDrawingRef = useRef(false);
+  const [streetDrawingPoints, setStreetDrawingPoints] = useState<[number, number][]>([]);
+  const streetDrawingPointsRef = useRef<[number, number][]>([]);
+  const [drawingColor, setDrawingColor] = useState('#EF4444');
+  const drawingColorRef = useRef('#EF4444');
+  drawingColorRef.current = drawingColor;
+  const finishStreetDrawingRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -66,6 +75,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   }, []);
 
   const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team, setUserLocation, setPinFilter, toggleAI, openAddPinModal, openEditPinModal, addPin, isClockedIn, addRoute, deleteRoute, mapTheme, trailPoints, trailView, addTrailPoint, removeTrailPointsNear, clearMyTrail, setTrailView, saleNotifications } = useKnockAIStore();
+
+  const { drawings, addLocalDrawing } = useTeamDrawings(team?.id, user?.id);
 
   const filteredPins = useMemo(() => pinFilter === 'all' ? pins : pins.filter((p) => p.type === pinFilter), [pins, pinFilter]);
   const searchResults = useMemo(() => searchQuery ? pins.filter((p) => p.leadName?.toLowerCase().includes(searchQuery.toLowerCase()) || p.address.toLowerCase().includes(searchQuery.toLowerCase())) : [], [pins, searchQuery]);
@@ -128,10 +139,24 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           map.addLayer({ id: 'draw-outline', type: 'line', source: 'draw-preview', paint: { 'line-color': '#8B5CF6', 'line-width': 2, 'line-dasharray': [3, 2] } });
           map.addSource('trail-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
           map.addLayer({ id: 'trail-line', type: 'line', source: 'trail-data', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'isOwn'], true], '#EF4444', '#8B5CF6'], 'line-width': 3, 'line-opacity': 0.8 } });
+          map.addSource('street-drawings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          map.addLayer({ id: 'street-drawings-line', type: 'line', source: 'street-drawings', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.9 } });
+          map.addSource('street-drawing-active', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          map.addLayer({ id: 'street-drawing-active-line', type: 'line', source: 'street-drawing-active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [3, 2] } });
+          map.addSource('street-drawing-dots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          map.addLayer({ id: 'street-drawing-dots-layer', type: 'circle', source: 'street-drawing-dots', paint: { 'circle-radius': 5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
           setMapLoaded(true);
           setMapStyleVersion((v) => v + 1);
           map.on('click', (e: any) => {
             if (isErasingRef.current) { useKnockAIStore.getState().removeTrailPointsNear(e.lngLat.lat, e.lngLat.lng, 60); return; }
+            if (isStreetDrawingRef.current) {
+              if ((e.originalEvent as MouseEvent).detail > 1) return;
+              const pt: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+              const next = [...streetDrawingPointsRef.current, pt];
+              streetDrawingPointsRef.current = next;
+              setStreetDrawingPoints([...next]);
+              return;
+            }
             if (isDrawingRef.current) {
               const pt: [number, number] = [e.lngLat.lng, e.lngLat.lat];
               const next = [...drawingPointsRef.current, pt];
@@ -139,6 +164,12 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               setDrawingPoints([...next]);
             } else {
               setQuickPinCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+            }
+          });
+          map.on('dblclick', (e: any) => {
+            if (isStreetDrawingRef.current) {
+              e.preventDefault();
+              finishStreetDrawingRef.current();
             }
           });
           map.on('dragstart', () => setFollowMode(false));
@@ -168,6 +199,12 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       map.addLayer({ id: 'draw-outline', type: 'line', source: 'draw-preview', paint: { 'line-color': '#8B5CF6', 'line-width': 2, 'line-dasharray': [3, 2] } });
       map.addSource('trail-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: 'trail-line', type: 'line', source: 'trail-data', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'isOwn'], true], '#EF4444', '#8B5CF6'], 'line-width': 3, 'line-opacity': 0.8 } });
+      map.addSource('street-drawings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: 'street-drawings-line', type: 'line', source: 'street-drawings', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.9 } });
+      map.addSource('street-drawing-active', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: 'street-drawing-active-line', type: 'line', source: 'street-drawing-active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [3, 2] } });
+      map.addSource('street-drawing-dots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: 'street-drawing-dots-layer', type: 'circle', source: 'street-drawing-dots', paint: { 'circle-radius': 5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
       setMapStyleVersion((v) => v + 1);
     });
   }, [mapTheme, mapLoaded]);
@@ -261,6 +298,32 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   }, [trailPoints, trailView, mapStyleVersion, user?.id]);
 
   useEffect(() => {
+    if (!mapInstance.current || mapStyleVersion === 0) return;
+    const src = mapInstance.current.getSource('street-drawings');
+    if (!src) return;
+    const features = drawings.map((d) => ({
+      type: 'Feature' as const,
+      properties: { color: d.color },
+      geometry: { type: 'LineString' as const, coordinates: d.coordinates },
+    }));
+    src.setData({ type: 'FeatureCollection', features });
+  }, [drawings, mapStyleVersion]);
+
+  useEffect(() => {
+    if (!mapInstance.current || mapStyleVersion === 0) return;
+    const activeSrc = mapInstance.current.getSource('street-drawing-active');
+    const dotsSrc = mapInstance.current.getSource('street-drawing-dots');
+    if (!activeSrc || !dotsSrc) return;
+    if (streetDrawingPoints.length < 2) {
+      activeSrc.setData({ type: 'FeatureCollection', features: [] });
+      dotsSrc.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+    activeSrc.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { color: drawingColor }, geometry: { type: 'LineString', coordinates: streetDrawingPoints } }] });
+    dotsSrc.setData({ type: 'FeatureCollection', features: streetDrawingPoints.map((pt) => ({ type: 'Feature', properties: { color: drawingColor }, geometry: { type: 'Point', coordinates: pt } })) });
+  }, [streetDrawingPoints, drawingColor, mapStyleVersion]);
+
+  useEffect(() => {
     if (!mapInstance.current || !mapLoaded || !maplibreRef.current) return;
     const ml = maplibreRef.current;
     teammateMarkersRef.current.forEach((m) => m.remove());
@@ -311,6 +374,45 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     }, 5000);
     return () => clearInterval(id);
   }, [isClockedIn]);
+
+  const finishStreetDrawing = () => {
+    const pts = streetDrawingPointsRef.current;
+    if (pts.length < 2 || !team?.id || !user?.id) { cancelStreetDrawing(); return; }
+    const drawing: TeamDrawing = {
+      id: `drw-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      teamId: team.id,
+      userId: user.id,
+      userName: user.fullName || '',
+      coordinates: pts,
+      color: drawingColorRef.current,
+      createdAt: new Date().toISOString(),
+    };
+    addLocalDrawing(drawing);
+    fetch('/api/knockai/drawings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drawing }) }).catch(() => {});
+    isStreetDrawingRef.current = false;
+    streetDrawingPointsRef.current = [];
+    setStreetDrawingPoints([]);
+    setIsStreetDrawing(false);
+  };
+  finishStreetDrawingRef.current = finishStreetDrawing;
+
+  const cancelStreetDrawing = () => {
+    isStreetDrawingRef.current = false;
+    streetDrawingPointsRef.current = [];
+    setStreetDrawingPoints([]);
+    setIsStreetDrawing(false);
+    const activeSrc = mapInstance.current?.getSource('street-drawing-active');
+    const dotsSrc = mapInstance.current?.getSource('street-drawing-dots');
+    if (activeSrc) activeSrc.setData({ type: 'FeatureCollection', features: [] });
+    if (dotsSrc) dotsSrc.setData({ type: 'FeatureCollection', features: [] });
+  };
+
+  const toggleStreetDrawing = () => {
+    if (isStreetDrawing) { cancelStreetDrawing(); return; }
+    if (isDrawing) cancelDrawing();
+    isStreetDrawingRef.current = true;
+    setIsStreetDrawing(true);
+  };
 
   const flyToPin = (pin: Pin) => { mapInstance.current?.flyTo({ center: [pin.lng, pin.lat], zoom: 17, duration: 800 }); setShowSearch(false); setSearchQuery(''); };
 
@@ -406,6 +508,19 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           <button onClick={() => setShowTrailPanel(!showTrailPanel)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${trailView !== 'off' ? 'rgba(239,68,68,0.5)' : 'rgba(0,102,204,0.2)'}`, background: trailView !== 'off' ? 'rgba(239,68,68,0.15)' : 'rgba(13,43,85,0.9)', color: trailView !== 'off' ? '#EF4444' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>🦶</button>
           {isClockedIn && trailView !== 'off' && <div style={{ position: 'absolute', top: -3, right: -3, width: 9, height: 9, borderRadius: '50%', background: '#10B981', border: '2px solid rgba(13,43,85,0.95)' }} />}
         </div>
+        <div style={{ position: 'relative' }}>
+          <button onClick={toggleStreetDrawing} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isStreetDrawing ? 'rgba(59,130,246,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isStreetDrawing ? 'rgba(59,130,246,0.25)' : 'rgba(13,43,85,0.9)', color: isStreetDrawing ? '#3B82F6' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)' }}>
+            <span style={{ fontSize: 14 }}>✏️</span>
+            <span style={{ fontSize: 7, fontWeight: 700 }}>Tracer</span>
+          </button>
+          {isStreetDrawing && (
+            <div style={{ position: 'absolute', right: 48, top: 0, display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 8px', borderRadius: 12, background: 'rgba(13,43,85,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+              {[{ color: '#EF4444' }, { color: '#1F2937' }, { color: '#3B82F6' }].map(({ color }) => (
+                <button key={color} onClick={() => { setDrawingColor(color); drawingColorRef.current = color; }} style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: drawingColor === color ? '3px solid white' : '2px solid rgba(255,255,255,0.3)', cursor: 'pointer', flexShrink: 0 }} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* AI toggle */}
@@ -461,7 +576,25 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </div>
       )}
 
-      {/* Drawing overlay */}
+      {/* Street drawing overlay */}
+      {isStreetDrawing && (
+        <>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(37,99,235,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>✏️ Mode traçage actif</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>{streetDrawingPoints.length < 2 ? `${streetDrawingPoints.length}/2 points min` : `${streetDrawingPoints.length} points · double-clic pour terminer`}</div>
+            </div>
+            <button onClick={cancelStreetDrawing} style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Annuler</button>
+          </div>
+          {streetDrawingPoints.length >= 2 && (
+            <div style={{ position: 'absolute', bottom: isDesktop ? 24 : 90, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+              <button onClick={() => finishStreetDrawingRef.current()} style={{ padding: '14px 32px', borderRadius: 30, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #3B82F6, #1D4ED8)', color: '#fff', fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(59,130,246,0.5)' }}>✓ Terminer le tracé</button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Zone drawing overlay */}
       {isDrawing && (
         <>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(139,92,246,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
