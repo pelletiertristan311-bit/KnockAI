@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useKnockAIStore, Pin, PinType } from '@/lib/knockai/store';
+import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -19,7 +20,7 @@ const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: stri
 const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6' };
 const PIN_ICONS: Record<PinType, string> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: 'AI' };
 
-export default function MapScreen() {
+export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeStatus?: RealtimeStatus }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const maplibreRef = useRef<any>(null);
@@ -176,19 +177,28 @@ export default function MapScreen() {
     const ml = maplibreRef.current;
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
+    const myId = user?.id;
     filteredPins.forEach((pin) => {
+      const isOwn = pin.userId === myId;
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'width:40px;height:40px;cursor:pointer;';
+      wrapper.style.cssText = 'width:40px;height:40px;cursor:pointer;position:relative;';
       const inner = document.createElement('div');
-      inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${pin.type === 'ai_knocked' ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
+      inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${pin.type === 'ai_knocked' ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
       inner.textContent = PIN_ICONS[pin.type];
       wrapper.appendChild(inner);
+      if (!isOwn) {
+        const badge = document.createElement('div');
+        const initials = pin.placedByName.split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+        badge.style.cssText = 'position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:#8B5CF6;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;font-size:7px;font-weight:700;font-family:Inter,sans-serif;line-height:1;';
+        badge.textContent = initials;
+        wrapper.appendChild(badge);
+      }
       wrapper.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.2)'; });
       wrapper.addEventListener('mouseleave', () => { inner.style.transform = 'scale(1)'; });
       wrapper.addEventListener('click', (e) => { e.stopPropagation(); openEditPinModal(pin); });
       markersRef.current.push(new ml.Marker({ element: wrapper }).setLngLat([pin.lng, pin.lat]).addTo(mapInstance.current!));
     });
-  }, [filteredPins, mapLoaded]);
+  }, [filteredPins, mapLoaded, user?.id]);
 
   useEffect(() => {
     if (!mapInstance.current || mapStyleVersion === 0) return;
@@ -585,7 +595,22 @@ export default function MapScreen() {
         </div>
       )}
 
-      <style>{`@keyframes pulseUser{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6;}50%{transform:translate(-50%,-50%) scale(1.5);opacity:0.2;}}`}</style>
+      {/* Realtime status indicator */}
+      {realtimeStatus !== 'disabled' && (
+        <div style={{ position: 'absolute', bottom: 68, left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: realtimeStatus === 'live' ? 'rgba(16,185,129,0.15)' : realtimeStatus === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', border: `1px solid ${realtimeStatus === 'live' ? 'rgba(16,185,129,0.4)' : realtimeStatus === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.4)'}`, backdropFilter: 'blur(8px)' }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: realtimeStatus === 'live' ? '#10B981' : realtimeStatus === 'error' ? '#EF4444' : '#F59E0B', animation: realtimeStatus === 'live' ? 'pulseLive 2s ease-in-out infinite' : 'none' }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: realtimeStatus === 'live' ? '#10B981' : realtimeStatus === 'error' ? '#EF4444' : '#F59E0B' }}>
+              {realtimeStatus === 'live' ? 'LIVE' : realtimeStatus === 'connecting' ? 'CONNECTING…' : 'RECONNECTING…'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes pulseUser{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6;}50%{transform:translate(-50%,-50%) scale(1.5);opacity:0.2;}}
+        @keyframes pulseLive{0%,100%{opacity:1;}50%{opacity:0.3;}}
+      `}</style>
     </div>
   );
 }

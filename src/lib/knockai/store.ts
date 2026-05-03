@@ -459,12 +459,21 @@ export const useKnockAIStore = create<KnockAIState>()(
         const s = get();
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, user: s.user }, s.team?.id, s.team ? { team: s.team, teamMembers: s.teamMembers, routes: s.routes } : undefined);
         if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === s.user?.id), s.trailPoints.filter((p) => p.userId === s.user?.id));
+        // Supabase realtime broadcast (fire and forget)
+        if (pin.teamId) {
+          fetch('/api/knockai/pins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) }).catch(() => {});
+        }
       },
 
       updatePin: (id, updates) => {
         set((state) => ({ pins: state.pins.map((p) => p.id === id ? { ...p, ...updates } : p) }));
         const s = get();
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, user: s.user });
+        // Supabase realtime broadcast (fire and forget)
+        const updatedPin = s.pins.find((p) => p.id === id);
+        if (updatedPin?.teamId) {
+          fetch('/api/knockai/pins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: updatedPin }) }).catch(() => {});
+        }
       },
 
       deletePin: (id) => {
@@ -478,6 +487,10 @@ export const useKnockAIStore = create<KnockAIState>()(
         }));
         const s = get();
         if (s.user?.email) syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: s.team, teamMembers: s.teamMembers, user: s.user });
+        // Supabase realtime broadcast (fire and forget)
+        if (pin?.teamId) {
+          fetch('/api/knockai/pins', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {});
+        }
       },
 
       restorePin: (id) => {

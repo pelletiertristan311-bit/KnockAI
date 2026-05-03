@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
+import { useTeamPins } from '@/hooks/knockai/useTeamPins';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -17,9 +18,12 @@ import StatsModal from './modals/StatsModal';
 import DemoTutorialOverlay from './DemoTutorialOverlay';
 
 export default function KnockAIApp() {
-  const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pinNotifications, dismissPinNotification, pollTeamData, pollTeamPins } = useKnockAIStore();
+  const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pinNotifications, dismissPinNotification, pollTeamData, pollTeamPins, user, team } = useKnockAIStore();
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+
+  // Supabase Realtime — instant pin sync across team members
+  const realtimeStatus = useTeamPins(team?.id, user?.id);
 
   useEffect(() => {
     setMounted(true);
@@ -131,7 +135,7 @@ export default function KnockAIApp() {
           <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
             {activeTab === 'home' && <HomeScreen />}
             {activeTab === 'team' && <TeamScreen />}
-            {activeTab === 'map' && <MapScreen />}
+            {activeTab === 'map' && <MapScreen realtimeStatus={realtimeStatus} />}
             {activeTab === 'settings' && <SettingsScreen />}
             <DemoTutorialOverlay />
           </div>
@@ -151,7 +155,7 @@ export default function KnockAIApp() {
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
           {activeTab === 'home' && <HomeScreen />}
           {activeTab === 'team' && <TeamScreen />}
-          {activeTab === 'map' && <MapScreen />}
+          {activeTab === 'map' && <MapScreen realtimeStatus={realtimeStatus} />}
           {activeTab === 'settings' && <SettingsScreen />}
           <DemoTutorialOverlay />
         </div>

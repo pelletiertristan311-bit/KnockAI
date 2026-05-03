@@ -118,6 +118,9 @@ export default function SettingsScreen() {
       {/* Profile Card */}
       <ProfileCard user={user} t={t} onAccountPress={() => setShowAccountModal(true)} />
 
+      {/* Daily Stats Section */}
+      <DailyStatsSection lang={lang} />
+
       {/* Team Section */}
       <TeamCard
         user={user} team={team} teamMembers={teamMembers}
@@ -912,6 +915,152 @@ function HydrotechCard({ label }: { label: string }) {
 }
 
 /* ── Helpers ── */
+/* ══════════════════════════════════════════════════════════════
+   DAILY STATS SECTION
+══════════════════════════════════════════════════════════════ */
+
+const MONTH_NAMES: Record<string, string[]> = {
+  fr: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
+  en: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+  es: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+};
+
+const DAY_NAMES: Record<string, string[]> = {
+  fr: ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
+  en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  es: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+};
+
+function toLocalDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatWorkTime(secs: number, lang: string): string {
+  if (secs === 0) return '--';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (h === 0) return lang === 'fr' ? `${m}min` : `${m}m`;
+  return lang === 'fr' ? `${h}h ${m}min` : `${h}h ${m}m`;
+}
+
+function DailyStatsSection({ lang }: { lang: string }) {
+  const { pins, sessions, user } = useKnockAIStore();
+  const [open, setOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  const today = new Date();
+  const isToday = toLocalDateKey(selectedDate) === toLocalDateKey(today);
+  const isCurrentMonth = selectedDate.getMonth() === today.getMonth() && selectedDate.getFullYear() === today.getFullYear();
+
+  const months = MONTH_NAMES[lang] || MONTH_NAMES.en;
+  const days = DAY_NAMES[lang] || DAY_NAMES.en;
+
+  const dateKey = toLocalDateKey(selectedDate);
+  const dayPins = pins.filter((p) => p.userId === user?.id && toLocalDateKey(new Date(p.placedAt)) === dateKey);
+  const dayDoors = dayPins.length;
+  const daySales = dayPins.filter((p) => p.type === 'sale').length;
+  const dayRatio = dayDoors > 0 ? Math.round((daySales / dayDoors) * 100) : 0;
+  const daySessions = sessions.filter((s) => s.userId === user?.id && s.date === dateKey && s.clockOutAt);
+  const daySeconds = daySessions.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+  const hasData = dayDoors > 0 || daySeconds > 0;
+
+  const prevMonth = () => setSelectedDate((d) => {
+    const n = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+    const lastDay = new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate();
+    n.setDate(Math.min(d.getDate(), lastDay));
+    return n;
+  });
+
+  const nextMonth = () => setSelectedDate((d) => {
+    if (isCurrentMonth) return d;
+    const n = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const lastDay = new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate();
+    n.setDate(Math.min(d.getDate(), lastDay));
+    if (n > today) return new Date(today);
+    return n;
+  });
+
+  const prevDay = () => setSelectedDate((d) => {
+    const n = new Date(d);
+    n.setDate(n.getDate() - 1);
+    return n;
+  });
+
+  const nextDay = () => setSelectedDate((d) => {
+    if (isToday) return d;
+    const n = new Date(d);
+    n.setDate(n.getDate() + 1);
+    if (n > today) return new Date(today);
+    return n;
+  });
+
+  const statsLabel = lang === 'fr' ? 'Stats' : 'Stats';
+  const todayLabel = lang === 'fr' ? "Aujourd'hui" : lang === 'es' ? 'Hoy' : 'Today';
+  const noDataLabel = lang === 'fr' ? 'Aucune activité ce jour' : lang === 'es' ? 'Sin actividad' : 'No activity this day';
+  const dayLabel = isToday ? todayLabel : `${days[selectedDate.getDay()]} ${selectedDate.getDate()}`;
+
+  return (
+    <div style={{ margin: '0 16px 16px' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{statsLabel}</div>
+      <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+        <button onClick={() => setOpen(!open)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📊</div>
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{statsLabel}</div>
+            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{dayLabel} · {months[selectedDate.getMonth()]}</div>
+          </div>
+          <span style={{ color: '#4B5563', fontSize: 20, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>›</span>
+        </button>
+
+        {open && (
+          <div style={{ padding: '16px' }}>
+            {/* Month nav */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <button onClick={prevMonth} style={statsNavBtn}>◀</button>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#E5E7EB' }}>{months[selectedDate.getMonth()]} {selectedDate.getFullYear()}</span>
+              <button onClick={nextMonth} disabled={isCurrentMonth} style={{ ...statsNavBtn, opacity: isCurrentMonth ? 0.3 : 1, cursor: isCurrentMonth ? 'default' : 'pointer' }}>▶</button>
+            </div>
+
+            {/* Day nav */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, background: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: '10px 14px' }}>
+              <button onClick={prevDay} style={statsNavBtn}>◀</button>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{dayLabel}</span>
+              <button onClick={nextDay} disabled={isToday} style={{ ...statsNavBtn, opacity: isToday ? 0.3 : 1, cursor: isToday ? 'default' : 'pointer' }}>▶</button>
+            </div>
+
+            {/* Stats */}
+            {!hasData ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: '#4B5563', fontSize: 13 }}>{noDataLabel}</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <DayStat value={String(dayDoors)} label={lang === 'fr' ? 'Portes' : lang === 'es' ? 'Puertas' : 'Doors'} color="#8B5CF6" icon="🚪" />
+                <DayStat value={String(daySales)} label={lang === 'fr' ? 'Ventes' : lang === 'es' ? 'Ventas' : 'Sales'} color="#10B981" icon="💰" />
+                <DayStat value={`${dayRatio}%`} label="Ratio" color="#F59E0B" icon="🎯" />
+                <DayStat value={formatWorkTime(daySeconds, lang)} label={lang === 'fr' ? 'Temps' : lang === 'es' ? 'Tiempo' : 'Time'} color="#1A6FD6" icon="⏱" />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const statsNavBtn: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 8, color: '#fff', fontSize: 13, padding: '6px 11px', cursor: 'pointer', lineHeight: 1,
+};
+
+function DayStat({ value, label, color, icon }: { value: string; label: string; color: string; icon: string }) {
+  return (
+    <div style={{ padding: '14px 10px', borderRadius: 12, background: `${color}15`, border: `1px solid ${color}33`, textAlign: 'center' }}>
+      <div style={{ fontSize: 13, marginBottom: 4 }}>{icon}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
 function roleColor(role: UserRole) {
   if (role === 'owner') return '#7C3AED';
   if (role === 'manager') return '#1A6FD6';

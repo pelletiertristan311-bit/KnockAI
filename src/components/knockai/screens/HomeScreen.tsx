@@ -63,11 +63,12 @@ export default function HomeScreen() {
   }, []);
 
   const today = new Date().toDateString();
-  const todayDateKey = new Date().toISOString().split('T')[0];
+  const nowD = new Date();
+  const todayDateKey = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-${String(nowD.getDate()).padStart(2, '0')}`;
   const todayPins = pins.filter((p) => new Date(p.placedAt).toDateString() === today);
-  const doorsToday = pins.filter((p) => p.placedAt.startsWith(todayDateKey)).length;
-  const salesToday = pins.filter((p) => p.placedAt.startsWith(todayDateKey) && p.type === 'sale').length;
-  const todaySales = todayPins.filter((p) => p.type === 'sale').length;
+  const doorsToday = todayPins.length;
+  const salesToday = todayPins.filter((p) => p.type === 'sale').length;
+  const todaySales = salesToday;
 
   const todayCompletedSeconds = sessions
     .filter((s) => s.userId === user?.id && s.date === todayDateKey && s.clockOutAt)
