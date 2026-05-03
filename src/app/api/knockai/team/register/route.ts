@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const { team, teamMembers } = await req.json();
     if (!team?.id || !team?.inviteCode) return NextResponse.json({ error: 'Missing team data' }, { status: 400 });
 
-    const teamData = { team, teamMembers: teamMembers || [], chatMessages: [], routes: [] };
+    const teamData = { team, teamMembers: teamMembers || [], teamDates: [], routes: [] };
 
     await Promise.all([
       redis.set(TEAM_KEY(team.id), JSON.stringify(teamData), { ex: TTL }),

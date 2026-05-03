@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       await redis.set(USER_KEY(user.email.toLowerCase()), JSON.stringify(userData), { ex: TTL });
     }
 
-    return NextResponse.json({ ok: true, team: teamData.team, teamMembers: teamData.teamMembers, chatMessages: teamData.chatMessages || [], routes: teamData.routes || [] });
+    return NextResponse.json({ ok: true, team: teamData.team, teamMembers: teamData.teamMembers, teamDates: teamData.teamDates || [], routes: teamData.routes || [] });
   } catch (err) {
     console.error('Team join error:', err);
     return NextResponse.json({ error: 'Failed to join team' }, { status: 500 });

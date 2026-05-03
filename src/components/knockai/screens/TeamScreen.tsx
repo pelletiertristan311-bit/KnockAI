@@ -1,6 +1,6 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
-import { useKnockAIStore, UserRole, TeamMember, Route } from '@/lib/knockai/store';
+import { useState, useRef } from 'react';
+import { useKnockAIStore, UserRole, TeamMember, Route, TeamDate } from '@/lib/knockai/store';
 
 const ROLE_COLORS: Record<UserRole, string> = { owner: '#7C3AED', manager: '#1A6FD6', member: '#374151' };
 const ROLE_LABELS: Record<string, Record<UserRole, string>> = {
@@ -10,15 +10,16 @@ const ROLE_LABELS: Record<string, Record<UserRole, string>> = {
 };
 
 const T: Record<string, Record<string, string>> = {
-  en: { team: 'Team', noTeam: "You're not on a team yet", joinPrompt: 'Join or create a team to collaborate with your colleagues.', joinTeam: 'Join a Team', createTeam: 'Create a Team', members: 'Members', chat: 'Chat', routes: 'Routes', leaderboard: 'Leaderboard', today: 'Today', allTime: 'All Time', doors: 'Doors', sales: 'Sales', online: 'Online', offline: 'Offline', typeMessage: 'Type a message…', send: 'Send', noMessages: 'No messages yet. Start the conversation!', noRoutes: 'No team routes yet.', share: 'Share Code', inviteCode: 'Invite Code', editTeamName: 'Edit Team Name', save: 'Save', cancel: 'Cancel', role: 'Role', promote: 'Promote', demote: 'Demote', remove: 'Remove', topSeller: 'Top Seller', members2: 'Members', noSales: 'No sales yet' },
-  fr: { team: 'Équipe', noTeam: "Vous n'êtes pas encore dans une équipe", joinPrompt: 'Rejoignez ou créez une équipe pour collaborer.', joinTeam: 'Rejoindre', createTeam: 'Créer une équipe', members: 'Membres', chat: 'Chat', routes: 'Routes', leaderboard: 'Classement', today: "Aujourd'hui", allTime: 'Total', doors: 'Portes', sales: 'Ventes', online: 'En ligne', offline: 'Hors ligne', typeMessage: 'Écrire un message…', send: 'Envoyer', noMessages: 'Pas encore de messages.', noRoutes: 'Aucune route.', share: 'Partager', inviteCode: "Code d'invitation", editTeamName: "Modifier le nom", save: 'Sauvegarder', cancel: 'Annuler', role: 'Rôle', promote: 'Promouvoir', demote: 'Rétrograder', remove: 'Retirer', topSeller: 'Top vendeur', members2: 'Membres', noSales: 'Aucune vente' },
-  es: { team: 'Equipo', noTeam: 'Aún no estás en un equipo', joinPrompt: 'Únete o crea un equipo para colaborar.', joinTeam: 'Unirse', createTeam: 'Crear equipo', members: 'Miembros', chat: 'Chat', routes: 'Rutas', leaderboard: 'Ranking', today: 'Hoy', allTime: 'Total', doors: 'Puertas', sales: 'Ventas', online: 'En línea', offline: 'Desconectado', typeMessage: 'Escribe un mensaje…', send: 'Enviar', noMessages: 'Sin mensajes aún.', noRoutes: 'Sin rutas.', share: 'Compartir', inviteCode: 'Código', editTeamName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', role: 'Rol', promote: 'Promover', demote: 'Degradar', remove: 'Eliminar', topSeller: 'Top vendedor', members2: 'Miembros', noSales: 'Sin ventas' },
+  en: { team: 'Team', noTeam: "You're not on a team yet", joinPrompt: 'Join or create a team to collaborate with your colleagues.', joinTeam: 'Join a Team', createTeam: 'Create a Team', members: 'Members', dates: 'Dates', routes: 'Routes', leaderboard: 'Leaderboard', today: 'Today', allTime: 'All Time', doors: 'Doors', sales: 'Sales', online: 'Online', offline: 'Offline', noRoutes: 'No team routes yet.', share: 'Share Code', inviteCode: 'Invite Code', editTeamName: 'Edit Team Name', save: 'Save', cancel: 'Cancel', role: 'Role', promote: 'Promote', demote: 'Demote', remove: 'Remove', topSeller: 'Top Seller', members2: 'Members', noSales: 'No sales yet', availableDates: 'Available dates', addDate: 'Add date', addDateTitle: 'Add a date', noDates: 'No dates yet. Add one to get started!', city: 'City', date: 'Date', time: 'Time', notes: 'Notes', notesPlaceholder: 'Notes (optional, e.g. Morning only)', add: 'Add', book: 'Book', bookedBy: 'Booked by', available: 'Available', deleteQ: 'Delete?' },
+  fr: { team: 'Équipe', noTeam: "Vous n'êtes pas encore dans une équipe", joinPrompt: 'Rejoignez ou créez une équipe pour collaborer.', joinTeam: 'Rejoindre', createTeam: 'Créer une équipe', members: 'Membres', dates: 'Dates', routes: 'Routes', leaderboard: 'Classement', today: "Aujourd'hui", allTime: 'Total', doors: 'Portes', sales: 'Ventes', online: 'En ligne', offline: 'Hors ligne', noRoutes: 'Aucune route.', share: 'Partager', inviteCode: "Code d'invitation", editTeamName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', role: 'Rôle', promote: 'Promouvoir', demote: 'Rétrograder', remove: 'Retirer', topSeller: 'Top vendeur', members2: 'Membres', noSales: 'Aucune vente', availableDates: 'Dates disponibles', addDate: 'Ajouter une date', addDateTitle: 'Ajouter une date', noDates: 'Aucune date. Ajoutez-en une!', city: 'Ville', date: 'Date', time: 'Heure', notes: 'Notes', notesPlaceholder: 'Notes (optionnel, ex: Matin seulement)', add: 'Ajouter', book: 'Réserver', bookedBy: 'Réservé par', available: 'Disponible', deleteQ: 'Supprimer?' },
+  es: { team: 'Equipo', noTeam: 'Aún no estás en un equipo', joinPrompt: 'Únete o crea un equipo para colaborar.', joinTeam: 'Unirse', createTeam: 'Crear equipo', members: 'Miembros', dates: 'Fechas', routes: 'Rutas', leaderboard: 'Ranking', today: 'Hoy', allTime: 'Total', doors: 'Puertas', sales: 'Ventas', online: 'En línea', offline: 'Desconectado', noRoutes: 'Sin rutas.', share: 'Compartir', inviteCode: 'Código', editTeamName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', role: 'Rol', promote: 'Promover', demote: 'Degradar', remove: 'Eliminar', topSeller: 'Top vendedor', members2: 'Miembros', noSales: 'Sin ventas', availableDates: 'Fechas disponibles', addDate: 'Agregar fecha', addDateTitle: 'Agregar fecha', noDates: 'Sin fechas aún.', city: 'Ciudad', date: 'Fecha', time: 'Hora', notes: 'Notas', notesPlaceholder: 'Notas (opcional)', add: 'Agregar', book: 'Reservar', bookedBy: 'Reservado por', available: 'Disponible', deleteQ: '¿Eliminar?' },
 };
 
 export default function TeamScreen() {
   const {
-    user, team, teamMembers, chatMessages, routes, teamTab, pins,
-    setTeamTab, sendChatMessage, updateTeam, updateMemberRole, deleteRoute,
+    user, team, teamMembers, teamDates, routes, teamTab, pins, teamSettings,
+    setTeamTab, addTeamDate, claimTeamDate, unclaimTeamDate, deleteTeamDate,
+    updateTeam, updateMemberRole, deleteRoute,
     createTeam, joinTeam,
   } = useKnockAIStore();
 
@@ -49,17 +50,15 @@ export default function TeamScreen() {
 
   const tabs = [
     { id: 'members' as const, label: t.members },
-    { id: 'chat' as const, label: t.chat },
+    { id: 'dates' as const, label: t.dates },
     { id: 'routes' as const, label: t.routes },
     { id: 'leaderboard' as const, label: t.leaderboard },
   ];
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0F172A' }}>
-      {/* Team Header */}
       <TeamHeader team={team} isManager={isManager} updateTeam={updateTeam} t={t} lang={lang} rl={rl} user={user} />
 
-      {/* Stats Toggle */}
       <div style={{ padding: '12px 16px 0' }}>
         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 4, marginBottom: 12 }}>
           {(['today', 'all'] as const).map((mode) => (
@@ -69,7 +68,6 @@ export default function TeamScreen() {
           ))}
         </div>
 
-        {/* Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
           <StatCard value={doorsCount} label={t.doors} color="#8B5CF6" />
           <StatCard value={salesCount} label={t.sales} color="#10B981" />
@@ -78,7 +76,6 @@ export default function TeamScreen() {
         </div>
       </div>
 
-      {/* Tab Bar */}
       <div style={{ display: 'flex', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
         {tabs.map(({ id, label }) => (
           <button key={id} onClick={() => setTeamTab(id)} data-tour={`team-tab-${id}`} style={{ flex: 1, padding: '10px 4px', background: 'none', border: 'none', borderBottom: `2px solid ${teamTab === id ? '#1A6FD6' : 'transparent'}`, color: teamTab === id ? '#1A6FD6' : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -87,10 +84,9 @@ export default function TeamScreen() {
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div style={{ flex: 1, overflowY: teamTab === 'chat' ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {teamTab === 'members' && <MembersTab members={teamMembers} user={user} isManager={isManager} updateMemberRole={updateMemberRole} t={t} rl={rl} />}
-        {teamTab === 'chat' && <ChatTab messages={chatMessages} user={user} sendChatMessage={sendChatMessage} t={t} />}
+        {teamTab === 'dates' && <DatesTab dates={teamDates} user={user} isManager={isManager} addTeamDate={addTeamDate} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} team={team} teamSettings={teamSettings} t={t} />}
         {teamTab === 'routes' && <RoutesTab routes={teamRoutes} isManager={isManager} deleteRoute={deleteRoute} t={t} />}
         {teamTab === 'leaderboard' && <LeaderboardTab members={teamMembers} pins={teamPins} todayPins={todayTeamPins} statsMode={statsMode} t={t} />}
       </div>
@@ -99,7 +95,6 @@ export default function TeamScreen() {
 }
 
 /* ─── Team Header ─── */
-
 function TeamHeader({ team, isManager, updateTeam, t, lang, rl, user }: any) {
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(team.name);
@@ -180,18 +175,6 @@ function MemberAvatar({ member, size = 40 }: { member: TeamMember; size?: number
   );
 }
 
-/* ─── Chat Avatar ─── */
-function ChatAvatar({ name }: { name: string }) {
-  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const colors = ['#1A6FD6', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#8B5CF6'];
-  const color = colors[name.charCodeAt(0) % colors.length];
-  return (
-    <div style={{ width: 32, height: 32, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-      {initials}
-    </div>
-  );
-}
-
 /* ─── Stat Card ─── */
 function StatCard({ value, label, color, small }: { value: number | string; label: string; color: string; small?: boolean }) {
   return (
@@ -256,61 +239,175 @@ function RoleModal({ member, onClose, updateMemberRole, t, rl, currentUserRole }
   );
 }
 
-/* ─── Chat Tab ─── */
-function ChatTab({ messages, user, sendChatMessage, t }: any) {
-  const [text, setText] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+/* ─── Dates Tab ─── */
+function DatesTab({ dates, user, isManager, addTeamDate, claimTeamDate, unclaimTeamDate, deleteTeamDate, team, teamSettings, t }: any) {
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
-
-  const handleSend = () => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    sendChatMessage(trimmed);
-    setText('');
-  };
+  const sorted = [...(dates || [])].sort((a: TeamDate, b: TeamDate) => {
+    return new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime();
+  });
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {messages.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>{t.noMessages}</div>
-        ) : (
-          messages.map((msg: any) => {
-            const isMe = msg.userId === user?.id;
-            return (
-              <div key={msg.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
-                {!isMe && (
-                  <ChatAvatar name={msg.userName} />
-                )}
-                <div style={{ maxWidth: '75%' }}>
-                  {!isMe && <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 3, paddingLeft: 4 }}>{msg.userName}</div>}
-                  <div style={{ padding: '10px 14px', borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: isMe ? '#1A6FD6' : 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' }}>
-                    {msg.text}
-                  </div>
-                  <div style={{ fontSize: 10, color: '#4B5563', marginTop: 3, textAlign: isMe ? 'right' : 'left', paddingLeft: isMe ? 0 : 4 }}>
-                    {new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 10px' }}>
+        <span style={{ color: '#E5E7EB', fontWeight: 700, fontSize: 15 }}>{t.availableDates}</span>
+        {isManager && (
+          <button onClick={() => setShowAddModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            + {t.addDate}
+          </button>
         )}
-        <div ref={bottomRef} />
       </div>
-      {/* Input */}
-      <div style={{ padding: '12px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, background: '#0F172A', flexShrink: 0 }}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          placeholder={t.typeMessage}
-          style={{ flex: 1, padding: '11px 14px', borderRadius: 22, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 14, outline: 'none' }}
-        />
-        <button onClick={handleSend} style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: text.trim() ? '#1A6FD6' : 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s' }}>
-          ➤
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {sorted.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', color: '#4B5563', fontSize: 14, textAlign: 'center', gap: 10 }}>
+            <span style={{ fontSize: 40 }}>📅</span>
+            <span>{t.noDates}</span>
+          </div>
+        ) : (
+          sorted.map((d: TeamDate) => (
+            <DateCard key={d.id} date={d} user={user} isManager={isManager} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} t={t} />
+          ))
+        )}
+      </div>
+
+      {showAddModal && (
+        <AddDateModal onClose={() => setShowAddModal(false)} addTeamDate={addTeamDate} team={team} user={user} teamSettings={teamSettings} t={t} />
+      )}
+    </div>
+  );
+}
+
+function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, deleteTeamDate, t }: { date: TeamDate; user: any; isManager: boolean; claimTeamDate: any; unclaimTeamDate: any; deleteTeamDate: any; t: any }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const isClaimed = !!date.claimedBy;
+  const isMyClaim = date.claimedBy === user?.id;
+  const canUnclaim = isMyClaim || isManager;
+
+  const dateObj = new Date(`${date.date}T${date.time}`);
+  const formattedDate = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const isPast = dateObj < new Date();
+
+  return (
+    <div style={{ padding: '14px', borderRadius: 14, background: isPast ? 'rgba(255,255,255,0.02)' : isClaimed ? 'rgba(16,185,129,0.06)' : 'rgba(26,111,214,0.06)', border: `1px solid ${isPast ? 'rgba(255,255,255,0.05)' : isClaimed ? 'rgba(16,185,129,0.25)' : 'rgba(26,111,214,0.2)'}`, opacity: isPast ? 0.6 : 1 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: isPast ? 'rgba(255,255,255,0.06)' : isClaimed ? 'rgba(16,185,129,0.15)' : 'rgba(26,111,214,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+          {isClaimed ? '✅' : isPast ? '⏰' : '📅'}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{date.city}</div>
+          <div style={{ color: '#9CA3AF', fontSize: 12, marginTop: 2 }}>{formattedDate} · {date.time}</div>
+          {date.notes && <div style={{ color: '#6B7280', fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{date.notes}</div>}
+          {isClaimed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+              <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>✓ {t.bookedBy}: {date.claimedByName}</span>
+            </div>
+          )}
+          {!isClaimed && !isPast && (
+            <div style={{ marginTop: 4 }}>
+              <span style={{ fontSize: 11, color: '#1A6FD6', fontWeight: 600 }}>◦ {t.available}</span>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+          {!isClaimed && !isPast && (
+            <button onClick={() => claimTeamDate(date.id)} style={{ padding: '7px 14px', borderRadius: 10, border: 'none', background: '#1A6FD6', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              {t.book}
+            </button>
+          )}
+          {canUnclaim && isClaimed && (
+            <button onClick={() => unclaimTeamDate(date.id)} style={{ padding: '6px 12px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              {t.cancel}
+            </button>
+          )}
+          {isManager && (
+            confirmDelete ? (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button onClick={() => { deleteTeamDate(date.id); setConfirmDelete(false); }} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✓</button>
+                <button onClick={() => setConfirmDelete(false)} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 11, cursor: 'pointer' }}>✕</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4B5563', fontSize: 15, padding: '2px 4px' }}>🗑</button>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddDateModal({ onClose, addTeamDate, team, user, teamSettings, t }: any) {
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [city, setCity] = useState('');
+  const [notes, setNotes] = useState('');
+  const cities: string[] = teamSettings?.cities || [];
+  const canSubmit = date && time && city.trim();
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    addTeamDate({
+      date,
+      time,
+      city: city.trim(),
+      notes: notes.trim() || undefined,
+      createdBy: user?.id || '',
+      createdByName: user?.fullName || '',
+      teamId: team?.id || '',
+    });
+    onClose();
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' as any };
+  const labelStyle: React.CSSProperties = { display: 'block', color: '#9CA3AF', fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ width: '100%', maxWidth: 480, background: '#1E293B', borderRadius: '24px 24px 0 0', padding: '8px 20px 24px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '12px auto 20px' }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h3 style={{ color: '#fff', margin: 0, fontSize: 18, fontWeight: 800 }}>{t.addDateTitle}</h3>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <label style={labelStyle}>{t.date} *</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={today} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>{t.time} *</label>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>{t.city} *</label>
+            {cities.length > 0 ? (
+              <select value={city} onChange={(e) => setCity(e.target.value)}
+                style={{ ...inputStyle, background: '#1E293B', color: city ? '#fff' : '#6B7280' }}>
+                <option value="">-- {t.city} --</option>
+                {cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : (
+              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder={t.city} style={inputStyle} />
+            )}
+          </div>
+
+          <div>
+            <label style={labelStyle}>{t.notes}</label>
+            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.notesPlaceholder} style={inputStyle} />
+          </div>
+        </div>
+
+        <button onClick={handleSubmit} disabled={!canSubmit}
+          style={{ width: '100%', marginTop: 20, padding: '15px', borderRadius: 14, border: 'none', background: canSubmit ? 'linear-gradient(135deg, #1A6FD6, #7C3AED)' : 'rgba(255,255,255,0.07)', color: canSubmit ? '#fff' : '#4B5563', fontWeight: 800, fontSize: 16, cursor: canSubmit ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
+          {t.add}
         </button>
       </div>
     </div>
