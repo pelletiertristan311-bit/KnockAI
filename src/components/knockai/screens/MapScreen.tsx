@@ -181,7 +181,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     filteredPins.forEach((pin) => {
       const isOwn = pin.userId === myId;
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'width:40px;height:40px;cursor:pointer;position:relative;';
+      wrapper.style.cssText = 'width:40px;height:40px;cursor:pointer;';
       const inner = document.createElement('div');
       inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${pin.type === 'ai_knocked' ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
       inner.textContent = PIN_ICONS[pin.type];
@@ -196,7 +196,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       wrapper.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.2)'; });
       wrapper.addEventListener('mouseleave', () => { inner.style.transform = 'scale(1)'; });
       wrapper.addEventListener('click', (e) => { e.stopPropagation(); openEditPinModal(pin); });
-      markersRef.current.push(new ml.Marker({ element: wrapper }).setLngLat([pin.lng, pin.lat]).addTo(mapInstance.current!));
+      const m = new ml.Marker({ element: wrapper }).setLngLat([pin.lng, pin.lat]).addTo(mapInstance.current!);
+      m.getElement().style.position = 'absolute';
+      markersRef.current.push(m);
     });
   }, [filteredPins, mapLoaded, user?.id]);
 
@@ -216,7 +218,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const el = document.createElement('div');
       el.style.cssText = 'padding:6px 14px;border-radius:20px;background:rgba(139,92,246,0.92);color:white;font-size:13px;font-weight:800;white-space:nowrap;border:2px solid rgba(255,255,255,0.35);';
       el.textContent = route.name;
-      routeMarkersRef.current.push(new ml.Marker({ element: el }).setLngLat([lngs.reduce((a, b) => a + b, 0) / lngs.length, lats.reduce((a, b) => a + b, 0) / lats.length]).addTo(mapInstance.current!));
+      const rm = new ml.Marker({ element: el }).setLngLat([lngs.reduce((a, b) => a + b, 0) / lngs.length, lats.reduce((a, b) => a + b, 0) / lats.length]).addTo(mapInstance.current!);
+      rm.getElement().style.position = 'absolute';
+      routeMarkersRef.current.push(rm);
     });
   }, [routes, mapStyleVersion]);
 
@@ -235,7 +239,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     pts.forEach((pt, i) => {
       const el = document.createElement('div');
       el.style.cssText = `width:${i === 0 ? 14 : 10}px;height:${i === 0 ? 14 : 10}px;border-radius:50%;background:${i === 0 ? '#fff' : '#8B5CF6'};border:2px solid #8B5CF6;`;
-      drawDotMarkersRef.current.push(new ml.Marker({ element: el }).setLngLat(pt).addTo(mapInstance.current!));
+      const dm = new ml.Marker({ element: el }).setLngLat(pt).addTo(mapInstance.current!);
+      dm.getElement().style.position = 'absolute';
+      drawDotMarkersRef.current.push(dm);
     });
   }, [drawingPoints, mapStyleVersion]);
 
@@ -263,7 +269,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const el = document.createElement('div');
       el.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#8B5CF6;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 0 12px rgba(139,92,246,0.6);';
       el.textContent = member.fullName.charAt(0);
-      teammateMarkersRef.current.push(new ml.Marker({ element: el }).setLngLat([member.lng!, member.lat!]).addTo(mapInstance.current!));
+      const tm = new ml.Marker({ element: el }).setLngLat([member.lng!, member.lat!]).addTo(mapInstance.current!);
+      tm.getElement().style.position = 'absolute';
+      teammateMarkersRef.current.push(tm);
     });
   }, [teamMembers, mapLoaded]);
 
@@ -282,9 +290,10 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     const ml = maplibreRef.current;
     if (userMarkerRef.current) userMarkerRef.current.remove();
     const el = document.createElement('div');
-    el.style.cssText = 'position:relative;width:36px;height:36px;';
+    el.style.cssText = 'width:36px;height:36px;';
     el.innerHTML = `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,102,204,0.2);animation:pulseUser 2s ease-in-out infinite;"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid white;box-shadow:0 2px 8px rgba(0,102,204,0.5);"></div>`;
     userMarkerRef.current = new ml.Marker({ element: el }).setLngLat([userLocation.lng, userLocation.lat]).addTo(mapInstance.current!);
+    userMarkerRef.current.getElement().style.position = 'absolute';
     if (followMode) mapInstance.current!.flyTo({ center: [userLocation.lng, userLocation.lat], duration: 800 });
   }, [userLocation, mapLoaded, followMode]);
 
