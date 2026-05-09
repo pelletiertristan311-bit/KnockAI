@@ -10,15 +10,15 @@ const ROLE_LABELS: Record<string, Record<UserRole, string>> = {
 };
 
 const T: Record<string, Record<string, string>> = {
-  en: { team: 'Team', noTeam: "You're not on a team yet", joinPrompt: 'Join or create a team to collaborate with your colleagues.', joinTeam: 'Join a Team', createTeam: 'Create a Team', members: 'Members', dates: 'Dates', routes: 'Routes', leaderboard: 'Leaderboard', today: 'Today', allTime: 'All Time', doors: 'Doors', sales: 'Sales', online: 'Online', offline: 'Offline', noRoutes: 'No team routes yet.', share: 'Share Code', inviteCode: 'Invite Code', editTeamName: 'Edit Team Name', save: 'Save', cancel: 'Cancel', role: 'Role', promote: 'Promote', demote: 'Demote', remove: 'Remove', topSeller: 'Top Seller', members2: 'Members', noSales: 'No sales yet', availableDates: 'Available dates', addDate: 'Add date', addDateTitle: 'Add a date', noDates: 'No dates yet. Add one to get started!', city: 'City', date: 'Date', time: 'Time', notes: 'Notes', notesPlaceholder: 'Notes (optional, e.g. Morning only)', add: 'Add', book: 'Book', bookedBy: 'Booked by', available: 'Available', deleteQ: 'Delete?' },
-  fr: { team: 'Équipe', noTeam: "Vous n'êtes pas encore dans une équipe", joinPrompt: 'Rejoignez ou créez une équipe pour collaborer.', joinTeam: 'Rejoindre', createTeam: 'Créer une équipe', members: 'Membres', dates: 'Dates', routes: 'Routes', leaderboard: 'Classement', today: "Aujourd'hui", allTime: 'Total', doors: 'Portes', sales: 'Ventes', online: 'En ligne', offline: 'Hors ligne', noRoutes: 'Aucune route.', share: 'Partager', inviteCode: "Code d'invitation", editTeamName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', role: 'Rôle', promote: 'Promouvoir', demote: 'Rétrograder', remove: 'Retirer', topSeller: 'Top vendeur', members2: 'Membres', noSales: 'Aucune vente', availableDates: 'Dates disponibles', addDate: 'Ajouter une date', addDateTitle: 'Ajouter une date', noDates: 'Aucune date. Ajoutez-en une!', city: 'Ville', date: 'Date', time: 'Heure', notes: 'Notes', notesPlaceholder: 'Notes (optionnel, ex: Matin seulement)', add: 'Ajouter', book: 'Réserver', bookedBy: 'Réservé par', available: 'Disponible', deleteQ: 'Supprimer?' },
-  es: { team: 'Equipo', noTeam: 'Aún no estás en un equipo', joinPrompt: 'Únete o crea un equipo para colaborar.', joinTeam: 'Unirse', createTeam: 'Crear equipo', members: 'Miembros', dates: 'Fechas', routes: 'Rutas', leaderboard: 'Ranking', today: 'Hoy', allTime: 'Total', doors: 'Puertas', sales: 'Ventas', online: 'En línea', offline: 'Desconectado', noRoutes: 'Sin rutas.', share: 'Compartir', inviteCode: 'Código', editTeamName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', role: 'Rol', promote: 'Promover', demote: 'Degradar', remove: 'Eliminar', topSeller: 'Top vendedor', members2: 'Miembros', noSales: 'Sin ventas', availableDates: 'Fechas disponibles', addDate: 'Agregar fecha', addDateTitle: 'Agregar fecha', noDates: 'Sin fechas aún.', city: 'Ciudad', date: 'Fecha', time: 'Hora', notes: 'Notas', notesPlaceholder: 'Notas (opcional)', add: 'Agregar', book: 'Reservar', bookedBy: 'Reservado por', available: 'Disponible', deleteQ: '¿Eliminar?' },
+  en: { team: 'Team', noTeam: "You're not on a team yet", joinPrompt: 'Join or create a team to collaborate with your colleagues.', joinTeam: 'Join a Team', createTeam: 'Create a Team', members: 'Members', dates: 'Dates', routes: 'Routes', leaderboard: 'Leaderboard', today: 'Today', allTime: 'All Time', doors: 'Doors', sales: 'Sales', online: 'Online', offline: 'Offline', noRoutes: 'No team routes yet.', share: 'Share Code', inviteCode: 'Invite Code', editTeamName: 'Edit Team Name', save: 'Save', cancel: 'Cancel', role: 'Role', promote: 'Promote', demote: 'Demote', remove: 'Remove', topSeller: 'Top Seller', members2: 'Members', noSales: 'No sales yet', availableDates: 'Available dates', addDate: 'Add date', addDateTitle: 'Add a date', addDay: 'Add day', addDayTitle: 'Add a full day', addDayDesc: 'Adds 3 slots: 8:30, 12:00 and 15:00', noDates: 'No dates yet. Add one to get started!', city: 'City', date: 'Date', time: 'Time', notes: 'Notes', notesPlaceholder: 'Notes (optional, e.g. Morning only)', add: 'Add', book: 'Book', bookedBy: 'Booked by', available: 'Available', deleteQ: 'Delete?', requiredCity: 'Required city', enterCity: 'Enter the city to book', cityLockedLabel: 'City required' },
+  fr: { team: 'Équipe', noTeam: "Vous n'êtes pas encore dans une équipe", joinPrompt: 'Rejoignez ou créez une équipe pour collaborer.', joinTeam: 'Rejoindre', createTeam: 'Créer une équipe', members: 'Membres', dates: 'Dates', routes: 'Routes', leaderboard: 'Classement', today: "Aujourd'hui", allTime: 'Total', doors: 'Portes', sales: 'Ventes', online: 'En ligne', offline: 'Hors ligne', noRoutes: 'Aucune route.', share: 'Partager', inviteCode: "Code d'invitation", editTeamName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', role: 'Rôle', promote: 'Promouvoir', demote: 'Rétrograder', remove: 'Retirer', topSeller: 'Top vendeur', members2: 'Membres', noSales: 'Aucune vente', availableDates: 'Dates disponibles', addDate: 'Ajouter une date', addDateTitle: 'Ajouter une date', addDay: 'Ajouter un jour', addDayTitle: 'Ajouter une journée complète', addDayDesc: 'Ajoute 3 disponibilités : 8h30, 12h et 15h', noDates: 'Aucune date. Ajoutez-en une!', city: 'Ville', date: 'Date', time: 'Heure', notes: 'Notes', notesPlaceholder: 'Notes (optionnel, ex: Matin seulement)', add: 'Ajouter', book: 'Réserver', bookedBy: 'Réservé par', available: 'Disponible', deleteQ: 'Supprimer?', requiredCity: 'Ville obligatoire', enterCity: 'Entrez la ville pour réserver', cityLockedLabel: 'Ville requise' },
+  es: { team: 'Equipo', noTeam: 'Aún no estás en un equipo', joinPrompt: 'Únete o crea un equipo para colaborar.', joinTeam: 'Unirse', createTeam: 'Crear equipo', members: 'Miembros', dates: 'Fechas', routes: 'Rutas', leaderboard: 'Ranking', today: 'Hoy', allTime: 'Total', doors: 'Puertas', sales: 'Ventas', online: 'En línea', offline: 'Desconectado', noRoutes: 'Sin rutas.', share: 'Compartir', inviteCode: 'Código', editTeamName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', role: 'Rol', promote: 'Promover', demote: 'Degradar', remove: 'Eliminar', topSeller: 'Top vendedor', members2: 'Miembros', noSales: 'Sin ventas', availableDates: 'Fechas disponibles', addDate: 'Agregar fecha', addDateTitle: 'Agregar fecha', addDay: 'Agregar día', addDayTitle: 'Agregar un día completo', addDayDesc: 'Agrega 3 turnos: 8:30, 12:00 y 15:00', noDates: 'Sin fechas aún.', city: 'Ciudad', date: 'Fecha', time: 'Hora', notes: 'Notas', notesPlaceholder: 'Notas (opcional)', add: 'Agregar', book: 'Reservar', bookedBy: 'Reservado por', available: 'Disponible', deleteQ: '¿Eliminar?', requiredCity: 'Ciudad requerida', enterCity: 'Ingresa la ciudad para reservar', cityLockedLabel: 'Ciudad requerida' },
 };
 
 export default function TeamScreen() {
   const {
     user, team, teamMembers, teamDates, routes, teamTab, pins, teamSettings,
-    setTeamTab, addTeamDate, claimTeamDate, unclaimTeamDate, deleteTeamDate,
+    setTeamTab, addTeamDate, addTeamDay, claimTeamDate, unclaimTeamDate, deleteTeamDate,
     updateTeam, updateMemberRole, deleteRoute,
     createTeam, joinTeam,
   } = useKnockAIStore();
@@ -86,7 +86,7 @@ export default function TeamScreen() {
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {teamTab === 'members' && <MembersTab members={teamMembers} user={user} isManager={isManager} updateMemberRole={updateMemberRole} t={t} rl={rl} />}
-        {teamTab === 'dates' && <DatesTab dates={teamDates} user={user} isManager={isManager} addTeamDate={addTeamDate} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} team={team} teamSettings={teamSettings} t={t} />}
+        {teamTab === 'dates' && <DatesTab dates={teamDates} user={user} isManager={isManager} addTeamDate={addTeamDate} addTeamDay={addTeamDay} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} team={team} teamSettings={teamSettings} t={t} />}
         {teamTab === 'routes' && <RoutesTab routes={teamRoutes} isManager={isManager} deleteRoute={deleteRoute} t={t} />}
         {teamTab === 'leaderboard' && <LeaderboardTab members={teamMembers} pins={teamPins} todayPins={todayTeamPins} statsMode={statsMode} t={t} />}
       </div>
@@ -240,99 +240,263 @@ function RoleModal({ member, onClose, updateMemberRole, t, rl, currentUserRole }
 }
 
 /* ─── Dates Tab ─── */
-function DatesTab({ dates, user, isManager, addTeamDate, claimTeamDate, unclaimTeamDate, deleteTeamDate, team, teamSettings, t }: any) {
+function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDate, unclaimTeamDate, deleteTeamDate, team, teamSettings, t }: any) {
   const [showAddModal, setShowAddModal] = useState(false);
-
-  const sorted = [...(dates || [])].sort((a: TeamDate, b: TeamDate) => {
-    return new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime();
+  const [showAddDayModal, setShowAddDayModal] = useState(false);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
   });
+
+  const prevMonth = () => setViewMonth((prev) => {
+    const d = new Date(prev.year, prev.month - 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  const nextMonth = () => setViewMonth((prev) => {
+    const d = new Date(prev.year, prev.month + 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+
+  const locale = user?.language === 'fr' ? 'fr-CA' : user?.language === 'es' ? 'es' : 'en-US';
+  const monthLabel = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+
+  const monthDates = (dates || []).filter((d: TeamDate) => {
+    const [y, m] = d.date.split('-').map(Number);
+    return y === viewMonth.year && m === viewMonth.month + 1;
+  });
+
+  const now = new Date();
+  const available = [...monthDates]
+    .filter((d: TeamDate) => !d.claimedBy && new Date(`${d.date}T${d.time}`) >= now)
+    .sort((a: TeamDate, b: TeamDate) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+  const booked = [...monthDates]
+    .filter((d: TeamDate) => d.claimedBy || new Date(`${d.date}T${d.time}`) < now)
+    .sort((a: TeamDate, b: TeamDate) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+
+  const sectionLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#4B5563', textTransform: 'uppercase', letterSpacing: 0.8, padding: '4px 2px' };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 10px' }}>
-        <span style={{ color: '#E5E7EB', fontWeight: 700, fontSize: 15 }}>{t.availableDates}</span>
-        {isManager && (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px' }}>
+        <button onClick={prevMonth} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#E5E7EB', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+        <span style={{ color: '#E5E7EB', fontWeight: 700, fontSize: 15, textTransform: 'capitalize' }}>{monthLabel}</span>
+        <button onClick={nextMonth} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#E5E7EB', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+      </div>
+
+      {isManager && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '0 16px 10px' }}>
+          <button onClick={() => setShowAddDayModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(139,92,246,0.5)', background: 'rgba(139,92,246,0.12)', color: '#A78BFA', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            + {t.addDay}
+          </button>
           <button onClick={() => setShowAddModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
             + {t.addDate}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {sorted.length === 0 ? (
+        {monthDates.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', color: '#4B5563', fontSize: 14, textAlign: 'center', gap: 10 }}>
             <span style={{ fontSize: 40 }}>📅</span>
             <span>{t.noDates}</span>
           </div>
         ) : (
-          sorted.map((d: TeamDate) => (
-            <DateCard key={d.id} date={d} user={user} isManager={isManager} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} t={t} />
-          ))
+          <>
+            {available.length > 0 && (
+              <>
+                <div style={sectionLabel}>{t.available} ({available.length})</div>
+                {available.map((d: TeamDate) => (
+                  <DateCard key={d.id} date={d} user={user} isManager={isManager} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} teamSettings={teamSettings} t={t} />
+                ))}
+              </>
+            )}
+            {booked.length > 0 && (
+              <>
+                <div style={{ ...sectionLabel, marginTop: available.length > 0 ? 6 : 0 }}>{t.bookedBy} ({booked.length})</div>
+                {booked.map((d: TeamDate) => (
+                  <DateCard key={d.id} date={d} user={user} isManager={isManager} claimTeamDate={claimTeamDate} unclaimTeamDate={unclaimTeamDate} deleteTeamDate={deleteTeamDate} teamSettings={teamSettings} t={t} />
+                ))}
+              </>
+            )}
+          </>
         )}
       </div>
 
       {showAddModal && (
         <AddDateModal onClose={() => setShowAddModal(false)} addTeamDate={addTeamDate} team={team} user={user} teamSettings={teamSettings} t={t} />
       )}
+      {showAddDayModal && (
+        <AddDayModal onClose={() => setShowAddDayModal(false)} addTeamDay={addTeamDay} team={team} user={user} t={t} />
+      )}
     </div>
   );
 }
 
-function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, deleteTeamDate, t }: { date: TeamDate; user: any; isManager: boolean; claimTeamDate: any; unclaimTeamDate: any; deleteTeamDate: any; t: any }) {
+function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, deleteTeamDate, teamSettings, t }: { date: TeamDate; user: any; isManager: boolean; claimTeamDate: any; unclaimTeamDate: any; deleteTeamDate: any; teamSettings: any; t: any }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
   const isClaimed = !!date.claimedBy;
   const isMyClaim = date.claimedBy === user?.id;
   const canUnclaim = isMyClaim || isManager;
+  const needsCityOnBook = !!date.dayGroupId && !date.city;
 
   const dateObj = new Date(`${date.date}T${date.time}`);
   const formattedDate = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const isPast = dateObj < new Date();
 
+  const handleBook = () => {
+    if (needsCityOnBook) {
+      setShowBookModal(true);
+    } else {
+      claimTeamDate(date.id);
+    }
+  };
+
   return (
-    <div style={{ padding: '14px', borderRadius: 14, background: isPast ? 'rgba(255,255,255,0.02)' : isClaimed ? 'rgba(16,185,129,0.06)' : 'rgba(26,111,214,0.06)', border: `1px solid ${isPast ? 'rgba(255,255,255,0.05)' : isClaimed ? 'rgba(16,185,129,0.25)' : 'rgba(26,111,214,0.2)'}`, opacity: isPast ? 0.6 : 1 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: isPast ? 'rgba(255,255,255,0.06)' : isClaimed ? 'rgba(16,185,129,0.15)' : 'rgba(26,111,214,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-          {isClaimed ? '✅' : isPast ? '⏰' : '📅'}
-        </div>
+    <>
+      <div style={{ padding: '14px', borderRadius: 14, background: isPast ? 'rgba(255,255,255,0.02)' : isClaimed ? 'rgba(16,185,129,0.06)' : date.cityLocked ? 'rgba(245,158,11,0.06)' : 'rgba(26,111,214,0.06)', border: `1px solid ${isPast ? 'rgba(255,255,255,0.05)' : isClaimed ? 'rgba(16,185,129,0.25)' : date.cityLocked ? 'rgba(245,158,11,0.3)' : 'rgba(26,111,214,0.2)'}`, opacity: isPast ? 0.6 : 1 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: isPast ? 'rgba(255,255,255,0.06)' : isClaimed ? 'rgba(16,185,129,0.15)' : date.cityLocked ? 'rgba(245,158,11,0.15)' : 'rgba(26,111,214,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+            {isClaimed ? '✅' : isPast ? '⏰' : date.cityLocked ? '📌' : '📅'}
+          </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{date.city}</div>
-          <div style={{ color: '#9CA3AF', fontSize: 12, marginTop: 2 }}>{formattedDate} · {date.time}</div>
-          {date.notes && <div style={{ color: '#6B7280', fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{date.notes}</div>}
-          {isClaimed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
-              <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>✓ {t.bookedBy}: {date.claimedByName}</span>
-            </div>
-          )}
-          {!isClaimed && !isPast && (
-            <div style={{ marginTop: 4 }}>
-              <span style={{ fontSize: 11, color: '#1A6FD6', fontWeight: 600 }}>◦ {t.available}</span>
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
-          {!isClaimed && !isPast && (
-            <button onClick={() => claimTeamDate(date.id)} style={{ padding: '7px 14px', borderRadius: 10, border: 'none', background: '#1A6FD6', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              {t.book}
-            </button>
-          )}
-          {canUnclaim && isClaimed && (
-            <button onClick={() => unclaimTeamDate(date.id)} style={{ padding: '6px 12px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-              {t.cancel}
-            </button>
-          )}
-          {isManager && (
-            confirmDelete ? (
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => { deleteTeamDate(date.id); setConfirmDelete(false); }} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✓</button>
-                <button onClick={() => setConfirmDelete(false)} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 11, cursor: 'pointer' }}>✕</button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {date.city ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{date.city}</span>
+                {date.cityLocked && !isClaimed && (
+                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 6, background: 'rgba(245,158,11,0.2)', color: '#F59E0B', fontWeight: 700 }}>{t.cityLockedLabel}</span>
+                )}
               </div>
             ) : (
-              <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4B5563', fontSize: 15, padding: '2px 4px' }}>🗑</button>
-            )
-          )}
+              <div style={{ color: '#6B7280', fontWeight: 600, fontSize: 13, fontStyle: 'italic' }}>— {t.city} —</div>
+            )}
+            <div style={{ color: '#9CA3AF', fontSize: 12, marginTop: 2 }}>{formattedDate} · {date.time}</div>
+            {date.notes && <div style={{ color: '#6B7280', fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{date.notes}</div>}
+            {isClaimed && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>✓ {t.bookedBy}: {date.claimedByName}</span>
+              </div>
+            )}
+            {!isClaimed && !isPast && (
+              <div style={{ marginTop: 4 }}>
+                <span style={{ fontSize: 11, color: date.cityLocked ? '#F59E0B' : '#1A6FD6', fontWeight: 600 }}>◦ {t.available}</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+            {!isClaimed && !isPast && (
+              <button onClick={handleBook} style={{ padding: '7px 14px', borderRadius: 10, border: 'none', background: date.cityLocked ? '#F59E0B' : '#1A6FD6', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                {t.book}
+              </button>
+            )}
+            {canUnclaim && isClaimed && (
+              <button onClick={() => unclaimTeamDate(date.id)} style={{ padding: '6px 12px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                {t.cancel}
+              </button>
+            )}
+            {isManager && (
+              confirmDelete ? (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button onClick={() => { deleteTeamDate(date.id); setConfirmDelete(false); }} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✓</button>
+                  <button onClick={() => setConfirmDelete(false)} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4B5563', fontSize: 15, padding: '2px 4px' }}>🗑</button>
+              )
+            )}
+          </div>
         </div>
+      </div>
+
+      {showBookModal && (
+        <BookWithCityModal
+          date={date}
+          teamSettings={teamSettings}
+          onClose={() => setShowBookModal(false)}
+          onConfirm={(city: string) => { claimTeamDate(date.id, city); setShowBookModal(false); }}
+          t={t}
+        />
+      )}
+    </>
+  );
+}
+
+function BookWithCityModal({ date, teamSettings, onClose, onConfirm, t }: any) {
+  const [city, setCity] = useState('');
+  const cities: string[] = teamSettings?.cities || [];
+  const dateObj = new Date(`${date.date}T${date.time}`);
+  const formattedDate = dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' as any };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ width: '100%', maxWidth: 480, background: '#1E293B', borderRadius: '24px 24px 0 0', padding: '8px 20px 24px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '12px auto 20px' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <h3 style={{ color: '#fff', margin: 0, fontSize: 18, fontWeight: 800 }}>{t.book}</h3>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        </div>
+        <div style={{ color: '#9CA3AF', fontSize: 13, marginBottom: 20 }}>{formattedDate} · {date.time}</div>
+
+        <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', marginBottom: 18, fontSize: 12, color: '#F59E0B' }}>
+          📌 {t.enterCity} — {t.requiredCity}
+        </div>
+
+        <label style={{ display: 'block', color: '#9CA3AF', fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 }}>{t.city} *</label>
+        {cities.length > 0 ? (
+          <select value={city} onChange={(e) => setCity(e.target.value)} style={{ ...inputStyle, background: '#1E293B', color: city ? '#fff' : '#6B7280', marginBottom: 20 }}>
+            <option value="">-- {t.city} --</option>
+            {cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        ) : (
+          <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder={t.city} style={{ ...inputStyle, marginBottom: 20 }} autoFocus />
+        )}
+
+        <button onClick={() => city.trim() && onConfirm(city.trim())} disabled={!city.trim()}
+          style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none', background: city.trim() ? '#1A6FD6' : 'rgba(255,255,255,0.07)', color: city.trim() ? '#fff' : '#4B5563', fontWeight: 800, fontSize: 16, cursor: city.trim() ? 'pointer' : 'not-allowed' }}>
+          {t.book}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AddDayModal({ onClose, addTeamDay, team, user, t }: any) {
+  const [day, setDay] = useState('');
+  const today = new Date().toISOString().split('T')[0];
+  const maxDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 1);
+  const max = maxDate.toISOString().split('T')[0];
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' as any };
+  const labelStyle: React.CSSProperties = { display: 'block', color: '#9CA3AF', fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 };
+
+  const handleSubmit = () => {
+    if (!day) return;
+    addTeamDay(day, user?.id || '', user?.fullName || '', team?.id || '');
+    onClose();
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ width: '100%', maxWidth: 480, background: '#1E293B', borderRadius: '24px 24px 0 0', padding: '8px 20px 24px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '12px auto 20px' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ color: '#fff', margin: 0, fontSize: 18, fontWeight: 800 }}>{t.addDayTitle}</h3>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        </div>
+        <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', marginBottom: 20, fontSize: 12, color: '#A78BFA' }}>
+          🗓 {t.addDayDesc}
+        </div>
+        <div>
+          <label style={labelStyle}>{t.date} *</label>
+          <input type="date" value={day} onChange={(e) => setDay(e.target.value)} min={today} max={max} style={inputStyle} />
+        </div>
+        <button onClick={handleSubmit} disabled={!day}
+          style={{ width: '100%', marginTop: 20, padding: '15px', borderRadius: 14, border: 'none', background: day ? 'linear-gradient(135deg, #7C3AED, #1A6FD6)' : 'rgba(255,255,255,0.07)', color: day ? '#fff' : '#4B5563', fontWeight: 800, fontSize: 16, cursor: day ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
+          {t.add} 3 {t.dates || 'dates'} (8h30 · 12h · 15h)
+        </button>
       </div>
     </div>
   );

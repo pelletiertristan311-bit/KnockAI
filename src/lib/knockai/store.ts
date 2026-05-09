@@ -111,6 +111,8 @@ export interface TeamDate {
   claimedBy?: string;
   claimedByName?: string;
   claimedAt?: string;
+  dayGroupId?: string;
+  cityLocked?: boolean;
 }
 
 export interface Session {
@@ -223,7 +225,8 @@ interface KnockAIState {
   setStatsModal: (open: boolean) => void;
   setSettingsSection: (section: string | null) => void;
   addTeamDate: (date: Omit<TeamDate, 'id'>) => void;
-  claimTeamDate: (dateId: string) => void;
+  addTeamDay: (day: string, createdBy: string, createdByName: string, teamId: string) => void;
+  claimTeamDate: (dateId: string, city?: string) => void;
   unclaimTeamDate: (dateId: string) => void;
   deleteTeamDate: (dateId: string) => void;
   setTeamTab: (tab: KnockAIState['teamTab']) => void;
@@ -546,15 +549,40 @@ export const useKnockAIStore = create<KnockAIState>()(
         if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === s.user?.id), s.trailPoints.filter((p) => p.userId === s.user?.id));
       },
 
-      claimTeamDate: (dateId) => {
-        const { user } = get();
+      addTeamDay: (day, createdBy, createdByName, teamId) => {
+        const groupId = `daygroup-${Date.now()}`;
+        const times = ['08:30', '12:00', '15:00'];
+        const newDates: TeamDate[] = times.map((time, i) => ({
+          id: `date-${Date.now()}-${i}`,
+          date: day,
+          time,
+          city: '',
+          createdBy,
+          createdByName,
+          teamId,
+          dayGroupId: groupId,
+        }));
+        set((state) => ({ teamDates: [...state.teamDates, ...newDates] }));
+        const s = get();
+        if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === s.user?.id), s.trailPoints.filter((p) => p.userId === s.user?.id));
+      },
+
+      claimTeamDate: (dateId, city?) => {
+        const { user, teamDates } = get();
         if (!user) return;
+        const target = teamDates.find((d) => d.id === dateId);
+        if (!target) return;
+        const effectiveCity = city || target.city;
         set((state) => ({
-          teamDates: state.teamDates.map((d) =>
-            d.id === dateId && !d.claimedBy
-              ? { ...d, claimedBy: user.id, claimedByName: user.fullName, claimedAt: new Date().toISOString() }
-              : d
-          ),
+          teamDates: state.teamDates.map((d) => {
+            if (d.id === dateId && !d.claimedBy) {
+              return { ...d, city: effectiveCity, claimedBy: user.id, claimedByName: user.fullName, claimedAt: new Date().toISOString() };
+            }
+            if (target.dayGroupId && d.dayGroupId === target.dayGroupId && d.id !== dateId && !d.claimedBy && effectiveCity) {
+              return { ...d, city: effectiveCity, cityLocked: true };
+            }
+            return d;
+          }),
         }));
         const s = get();
         if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === s.user?.id), s.trailPoints.filter((p) => p.userId === s.user?.id));
