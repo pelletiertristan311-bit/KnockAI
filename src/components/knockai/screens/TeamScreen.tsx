@@ -356,9 +356,7 @@ function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, delet
     <>
       <div style={{ padding: '14px', borderRadius: 14, background: isPast ? 'rgba(255,255,255,0.02)' : isClaimed ? 'rgba(16,185,129,0.06)' : date.cityLocked ? 'rgba(245,158,11,0.06)' : 'rgba(26,111,214,0.06)', border: `1px solid ${isPast ? 'rgba(255,255,255,0.05)' : isClaimed ? 'rgba(16,185,129,0.25)' : date.cityLocked ? 'rgba(245,158,11,0.3)' : 'rgba(26,111,214,0.2)'}`, opacity: isPast ? 0.6 : 1 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: isPast ? 'rgba(255,255,255,0.06)' : isClaimed ? 'rgba(16,185,129,0.15)' : date.cityLocked ? 'rgba(245,158,11,0.15)' : 'rgba(26,111,214,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-            {isClaimed ? '✅' : isPast ? '⏰' : date.cityLocked ? '📌' : '📅'}
-          </div>
+          <CalendarDayIcon dateStr={date.date} isPast={isPast} isClaimed={isClaimed} />
 
           <div style={{ flex: 1, minWidth: 0 }}>
             {date.city ? (
@@ -420,6 +418,26 @@ function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, delet
         />
       )}
     </>
+  );
+}
+
+function CalendarDayIcon({ dateStr, isPast, isClaimed }: { dateStr: string; isPast: boolean; isClaimed: boolean }) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDate();
+  const month = d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase().slice(0, 3);
+
+  const topBg = isPast ? '#374151' : isClaimed ? '#059669' : '#B91C1C';
+  const bodyBg = isPast ? '#1F2937' : isClaimed ? '#10B981' : '#DC2626';
+
+  return (
+    <div style={{ width: 44, height: 44, borderRadius: 11, overflow: 'hidden', flexShrink: 0, display: 'flex', flexDirection: 'column', boxShadow: '0 2px 6px rgba(0,0,0,0.35)' }}>
+      <div style={{ background: topBg, height: '30%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 8, fontWeight: 800, letterSpacing: 0.8 }}>{month}</span>
+      </div>
+      <div style={{ background: bodyBg, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#fff', fontSize: 22, fontWeight: 900, lineHeight: 1 }}>{day}</span>
+      </div>
+    </div>
   );
 }
 
