@@ -23,7 +23,7 @@ const PIN_ICONS: Record<string, string> = { sale: '✓', not_interested: '✕', 
 const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'Call Back', ai_knocked: 'AI Knocked' };
 
 export default function HomeScreen() {
-  const { user, isClockedIn, isPaused, clockInTime, accumulatedSeconds, clockIn, clockOut, pins, sessions, setActiveTab, setSettingsSection, openAddPinModal, openEditPinModal, dailyGoals, setDailyGoals } = useKnockAIStore();
+  const { user, isClockedIn, isPaused, clockInTime, accumulatedSeconds, clockIn, clockOut, pins, sessions, setActiveTab, setSettingsSection, openAddPinModal, openEditPinModal, dailyGoals, setDailyGoals, addPin, team } = useKnockAIStore();
   const [elapsed, setElapsed] = useState(() => {
     if (!isClockedIn) return 0;
     if (isPaused || !clockInTime) return accumulatedSeconds;
@@ -33,6 +33,8 @@ export default function HomeScreen() {
   const [showGoalEditor, setShowGoalEditor] = useState(false);
   const msgRef = useRef(0);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [quickPinLoading, setQuickPinLoading] = useState<string | null>(null);
+  const [quickPinFeedback, setQuickPinFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -80,6 +82,22 @@ export default function HomeScreen() {
     : isPaused ? 'Paused' : '';
 
   const goToSettings = (section: string) => { setSettingsSection(section); setActiveTab('settings'); };
+
+  const handleQuickPin = (pinType: 'sale' | 'call_back') => {
+    if (quickPinLoading) return;
+    if (!navigator.geolocation) return;
+    setQuickPinLoading(pinType);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        addPin({ lat: pos.coords.latitude, lng: pos.coords.longitude, type: pinType, address: '', placedByAi: false, teamId: team?.id });
+        setQuickPinLoading(null);
+        setQuickPinFeedback(pinType);
+        setTimeout(() => setQuickPinFeedback(null), 2000);
+      },
+      () => { setQuickPinLoading(null); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const quickActions = [
     { label: 'Add Pin', icon: '📍', action: () => openAddPinModal() },
@@ -132,6 +150,29 @@ export default function HomeScreen() {
           <StatCard icon="🚪" label="Doors Knocked" value={String(todayPins.length)} color="#8B5CF6" />
           <StatCard icon="💰" label="Sales Made" value={String(todaySales)} color="#10B981" />
           <StatCard icon="🎯" label="Sales/hr" value={salesPerHour} color="#EF4444" />
+        </div>
+
+        <h3 style={{ fontWeight: 700, marginBottom: 12, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 }}>Quick Pin</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          {([
+            { type: 'call_back' as const, label: 'Call Back', icon: '📞', color: '#F59E0B', glow: 'rgba(245,158,11,0.35)' },
+            { type: 'sale' as const, label: 'Sale', icon: '💰', color: '#10B981', glow: 'rgba(16,185,129,0.35)' },
+          ] as const).map(({ type, label, icon, color, glow }) => {
+            const isLoading = quickPinLoading === type;
+            const isDone = quickPinFeedback === type;
+            return (
+              <button
+                key={type}
+                onClick={() => handleQuickPin(type)}
+                disabled={!!quickPinLoading}
+                style={{ padding: '18px 12px', borderRadius: 16, border: `1.5px solid ${color}55`, background: isDone ? `${color}22` : `${color}14`, color: '#fff', cursor: quickPinLoading ? 'not-allowed' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, boxShadow: isDone ? `0 0 18px ${glow}` : 'none', transition: 'all 0.25s', opacity: quickPinLoading && !isLoading ? 0.5 : 1 }}
+              >
+                <span style={{ fontSize: 28 }}>{isDone ? '✅' : isLoading ? '⏳' : icon}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color }}>{isDone ? 'Ajouté !' : isLoading ? 'GPS...' : label}</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Tap → pin ici</span>
+              </button>
+            );
+          })}
         </div>
 
         <h3 style={{ fontWeight: 700, marginBottom: 12, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 }}>Quick Actions</h3>
