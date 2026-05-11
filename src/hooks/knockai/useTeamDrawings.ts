@@ -31,12 +31,17 @@ function mapRowToDrawing(row: Record<string, any>): TeamDrawing {
 export function useTeamDrawings(teamId: string | undefined, userId: string | undefined): {
   drawings: TeamDrawing[];
   addLocalDrawing: (d: TeamDrawing) => void;
+  removeLocalDrawing: (id: string) => void;
 } {
   const [drawings, setDrawings] = useState<TeamDrawing[]>([]);
   const channelRef = useRef<any>(null);
 
   const addLocalDrawing = (d: TeamDrawing) => {
     setDrawings((prev) => [...prev.filter((x) => x.id !== d.id), d]);
+  };
+
+  const removeLocalDrawing = (id: string) => {
+    setDrawings((prev) => prev.filter((x) => x.id !== id));
   };
 
   useEffect(() => {
@@ -60,7 +65,6 @@ export function useTeamDrawings(teamId: string | undefined, userId: string | und
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const d = mapRowToDrawing(payload.new as Record<string, any>);
-            if (d.userId === userId) return;
             setDrawings((prev) => [...prev.filter((x) => x.id !== d.id), d]);
           }
           if (payload.eventType === 'DELETE') {
@@ -81,5 +85,5 @@ export function useTeamDrawings(teamId: string | undefined, userId: string | und
     };
   }, [teamId, userId]);
 
-  return { drawings, addLocalDrawing };
+  return { drawings, addLocalDrawing, removeLocalDrawing };
 }
