@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useKnockAIStore, UserRole, PinType, TrashedPin, TrashedTeam } from '@/lib/knockai/store';
 
