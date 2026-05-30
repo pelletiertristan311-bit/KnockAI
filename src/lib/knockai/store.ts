@@ -11,12 +11,12 @@ async function syncToRedis(email: string, userData: object, teamId?: string, tea
   } catch { /* offline or Redis not configured */ }
 }
 
-async function syncTeamToRedis(teamId: string, teamMembers: object[], teamDates: object[], routes: object[], team?: object, pins?: object[], trailPoints?: object[]) {
+async function syncTeamToRedis(teamId: string, teamMembers: object[], teamDates: object[], routes: object[], team?: object, pins?: object[], trailPoints?: object[], drawings?: object[], syncingUserId?: string) {
   try {
     await fetch('/api/knockai/team/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teamId, teamMembers, teamDates, routes, team, pins, trailPoints }),
+      body: JSON.stringify({ teamId, teamMembers, teamDates, routes, team, pins, trailPoints, drawings, syncingUserId }),
     });
   } catch { /* offline */ }
 }
@@ -134,6 +134,16 @@ export interface TrailPoint {
   userId: string;
 }
 
+export interface TeamDrawing {
+  id: string;
+  teamId: string;
+  userId: string;
+  userName?: string;
+  coordinates: [number, number][];
+  color: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -197,6 +207,7 @@ interface KnockAIState {
   pinNotifications: PinNotification[];
   trailPoints: TrailPoint[];
   trailView: 'mine' | 'team' | 'off';
+  teamDrawings: TeamDrawing[];
   trashedPins: TrashedPin[];
   trashedTeams: TrashedTeam[];
   teamSettings: { shareLocation: boolean; showMemberTrails: boolean; salesNotif: boolean; dailyGoalSync: boolean; cities: string[] };
@@ -244,6 +255,10 @@ interface KnockAIState {
   removeTrailPointsNear: (lat: number, lng: number, radiusM: number) => void;
   clearMyTrail: () => void;
   setTrailView: (view: 'mine' | 'team' | 'off') => void;
+  addTeamDrawing: (drawing: TeamDrawing) => void;
+  removeTeamDrawing: (id: string) => void;
+  pushToTeam: () => void;
+  loadTeamDrawings: () => Promise<void>;
   setOnline: (online: boolean) => void;
   setDailyGoals: (goals: { doors: number; sales: number }) => void;
   dismissSaleNotification: (id: string) => void;
@@ -322,6 +337,7 @@ export const useKnockAIStore = create<KnockAIState>()(
       pinNotifications: [],
       trailPoints: [],
       trailView: 'mine',
+      teamDrawings: [],
       trashedPins: [],
       trashedTeams: [],
       teamSettings: { shareLocation: true, showMemberTrails: true, salesNotif: true, dailyGoalSync: false, cities: [] },
@@ -449,13 +465,14 @@ export const useKnockAIStore = create<KnockAIState>()(
       },
 
       addPin: (pinData) => {
-        const { user } = get();
+        const { user, team } = get();
         const pin: Pin = {
           ...pinData,
           id: `pin-${Date.now()}`,
           userId: user?.id || '',
           placedByName: user?.fullName || 'Unknown',
           placedAt: new Date().toISOString(),
+          teamId: pinData.teamId ?? team?.id,
         };
         set((state) => ({ pins: [...state.pins, pin] }));
         get().updateMyTeamStats();
@@ -688,6 +705,11 @@ export const useKnockAIStore = create<KnockAIState>()(
             teamMembers: json.teamMembers || [],
             teamDates: json.teamDates || [],
             routes: json.routes || [],
+            pins: [
+              ...state.pins.filter((p) => p.userId === state.user?.id),
+              ...(json.teamPins || []).filter((p: any) => p.userId !== state.user?.id),
+            ],
+            teamDrawings: json.drawings || [],
             user: state.user ? { ...state.user, teamId: json.team.id, role: 'member' } : null,
           }));
           const s = get();
@@ -759,6 +781,62 @@ export const useKnockAIStore = create<KnockAIState>()(
       },
 
       setTrailView: (view) => set({ trailView: view }),
+
+      addTeamDrawing: (drawing) => {
+        const { user, team, teamMembers, teamDates, routes, teamDrawings } = get();
+        if (!user || !team) return;
+        const next = [...teamDrawings.filter((d) => d.id !== drawing.id), drawing];
+        set({ teamDrawings: next });
+        const myDrawings = next.filter((d) => d.userId === user.id);
+        syncTeamToRedis(team.id, teamMembers, teamDates, routes, team, undefined, undefined, myDrawings, user.id);
+      },
+
+      removeTeamDrawing: (id) => {
+        const { user, team, teamMembers, teamDates, routes, teamDrawings } = get();
+        if (!user || !team) return;
+        const next = teamDrawings.filter((d) => d.id !== id);
+        set({ teamDrawings: next });
+        const myDrawings = next.filter((d) => d.userId === user.id);
+        syncTeamToRedis(team.id, teamMembers, teamDates, routes, team, undefined, undefined, myDrawings, user.id);
+      },
+
+      pushToTeam: () => {
+        const { user, team, teamMembers, teamDates, routes, pins, trailPoints, teamDrawings } = get();
+        if (!user || !team) return;
+        syncTeamToRedis(
+          team.id, teamMembers, teamDates, routes, team,
+          pins.filter((p) => p.userId === user.id),
+          trailPoints.filter((p) => p.userId === user.id),
+          teamDrawings.filter((d) => d.userId === user.id),
+          user.id
+        );
+      },
+
+      loadTeamDrawings: async () => {
+        const { team, user } = get();
+        if (!team?.id) return;
+        try {
+          const res = await fetch(`/api/knockai/drawings?teamId=${team.id}`);
+          if (!res.ok) return;
+          const json = await res.json();
+          if (!json.drawings || !Array.isArray(json.drawings) || json.drawings.length === 0) return;
+          const remote: TeamDrawing[] = json.drawings;
+          set((state) => {
+            const byId = new Map<string, TeamDrawing>(state.teamDrawings.map((d) => [d.id, d]));
+            remote.forEach((d) => { if (!byId.has(d.id)) byId.set(d.id, d); });
+            return { teamDrawings: Array.from(byId.values()) };
+          });
+          // Push own drawings (including newly loaded from Supabase) to Redis
+          const s = get();
+          if (s.user && s.team) {
+            const myDrawings = s.teamDrawings.filter((d) => d.userId === s.user!.id);
+            if (myDrawings.length > 0) {
+              syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, undefined, undefined, myDrawings, s.user.id);
+            }
+          }
+        } catch { /* offline */ }
+      },
+
       setOnline: (online) => set({ isOnline: online }),
       setDailyGoals: (goals) => set({ dailyGoals: goals }),
       dismissSaleNotification: (id) => set((state) => ({ saleNotifications: state.saleNotifications.filter((n) => n.id !== id) })),
@@ -857,6 +935,12 @@ export const useKnockAIStore = create<KnockAIState>()(
               ...(data.trailPoints as TrailPoint[]).filter((p) => p.userId !== myId),
             ],
           }),
+          ...(data.drawings && {
+            teamDrawings: [
+              ...state.teamDrawings.filter((d) => d.userId === myId),
+              ...(data.drawings as TeamDrawing[]).filter((d) => d.userId !== myId),
+            ],
+          }),
         }));
       },
     }),
@@ -881,6 +965,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         mapTheme: state.mapTheme,
         trailPoints: state.trailPoints,
         trailView: state.trailView,
+        teamDrawings: state.teamDrawings,
         dailyGoals: state.dailyGoals,
         trashedPins: state.trashedPins,
         trashedTeams: state.trashedTeams,

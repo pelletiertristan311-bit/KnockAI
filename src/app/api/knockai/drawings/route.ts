@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/knockai/supabase';
 
+export async function GET(req: NextRequest) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return NextResponse.json({ ok: true, drawings: [] });
+  const teamId = req.nextUrl.searchParams.get('teamId');
+  if (!teamId) return NextResponse.json({ error: 'Missing teamId' }, { status: 400 });
+  try {
+    const { data, error } = await supabase.from('drawings').select('*').eq('team_id', teamId).order('created_at', { ascending: true });
+    if (error) return NextResponse.json({ ok: true, drawings: [] });
+    const drawings = (data || []).map((row: any) => ({
+      id: String(row.id),
+      teamId: String(row.team_id),
+      userId: String(row.user_id),
+      userName: row.user_name || '',
+      coordinates: Array.isArray(row.coordinates) ? row.coordinates : (() => { try { return JSON.parse(row.coordinates || '[]'); } catch { return []; } })(),
+      color: row.color || '#EF4444',
+      createdAt: row.created_at || new Date().toISOString(),
+    }));
+    return NextResponse.json({ ok: true, drawings });
+  } catch {
+    return NextResponse.json({ ok: true, drawings: [] });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ ok: true, skipped: true });

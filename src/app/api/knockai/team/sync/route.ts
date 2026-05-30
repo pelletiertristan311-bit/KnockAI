@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   if (!redis) return NextResponse.json({ ok: true, skipped: true });
 
   try {
-    const { teamId, teamMembers, teamDates, routes, team, pins, trailPoints } = await req.json();
+    const { teamId, teamMembers, teamDates, routes, team, pins, trailPoints, drawings, syncingUserId } = await req.json();
     if (!teamId) return NextResponse.json({ error: 'Missing teamId' }, { status: 400 });
 
     const existing: any = await redis.get(TEAM_KEY(teamId));
@@ -32,6 +32,15 @@ export async function POST(req: NextRequest) {
       ];
     }
 
+    // Merge drawings by userId: replace syncing user's drawings, keep others'
+    let mergedDrawings = current.drawings || [];
+    if (drawings !== undefined && syncingUserId) {
+      mergedDrawings = [
+        ...(current.drawings || []).filter((d: any) => d.userId !== syncingUserId),
+        ...drawings,
+      ];
+    }
+
     const updated = {
       ...current,
       ...(team && { team }),
@@ -40,6 +49,7 @@ export async function POST(req: NextRequest) {
       ...(routes && { routes }),
       teamPins: mergedPins,
       trailPoints: mergedTrail,
+      drawings: mergedDrawings,
     };
 
     await redis.set(TEAM_KEY(teamId), JSON.stringify(updated), { ex: TTL });

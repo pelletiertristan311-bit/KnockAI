@@ -1,16 +1,9 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { getSupabaseClient } from '@/lib/knockai/supabase';
+import { useKnockAIStore, type TeamDrawing } from '@/lib/knockai/store';
 
-export interface TeamDrawing {
-  id: string;
-  teamId: string;
-  userId: string;
-  userName?: string;
-  coordinates: [number, number][];
-  color: string;
-  createdAt: string;
-}
+export type { TeamDrawing };
 
 function mapRowToDrawing(row: Record<string, any>): TeamDrawing {
   let coords: [number, number][] = [];
@@ -28,33 +21,27 @@ function mapRowToDrawing(row: Record<string, any>): TeamDrawing {
   };
 }
 
-export function useTeamDrawings(teamId: string | undefined, userId: string | undefined): {
-  drawings: TeamDrawing[];
-  addLocalDrawing: (d: TeamDrawing) => void;
-  removeLocalDrawing: (id: string) => void;
-} {
-  const [drawings, setDrawings] = useState<TeamDrawing[]>([]);
+export function useTeamDrawings(teamId: string | undefined, userId: string | undefined): void {
   const channelRef = useRef<any>(null);
-
-  const addLocalDrawing = (d: TeamDrawing) => {
-    setDrawings((prev) => [...prev.filter((x) => x.id !== d.id), d]);
-  };
-
-  const removeLocalDrawing = (id: string) => {
-    setDrawings((prev) => prev.filter((x) => x.id !== id));
-  };
 
   useEffect(() => {
     const supabase = getSupabaseClient();
     if (!supabase || !teamId) return;
 
+    // Initial load: merge all team drawings into the store
     supabase
       .from('drawings')
       .select('*')
       .eq('team_id', teamId)
       .order('created_at', { ascending: true })
       .then(({ data, error }) => {
-        if (!error && data) setDrawings(data.map(mapRowToDrawing));
+        if (error || !data) return;
+        const remote = data.map(mapRowToDrawing);
+        useKnockAIStore.setState((state) => {
+          const byId = new Map(state.teamDrawings.map((d) => [d.id, d]));
+          remote.forEach((d) => { if (!byId.has(d.id)) byId.set(d.id, d); });
+          return { teamDrawings: Array.from(byId.values()) };
+        });
       });
 
     const channel = supabase
@@ -63,13 +50,22 @@ export function useTeamDrawings(teamId: string | undefined, userId: string | und
         'postgres_changes',
         { event: '*', schema: 'public', table: 'drawings', filter: `team_id=eq.${teamId}` },
         (payload) => {
+          const currentUserId = useKnockAIStore.getState().user?.id;
+
           if (payload.eventType === 'INSERT') {
             const d = mapRowToDrawing(payload.new as Record<string, any>);
-            setDrawings((prev) => [...prev.filter((x) => x.id !== d.id), d]);
+            // Skip own drawings — already added optimistically via addTeamDrawing
+            if (d.userId === currentUserId) return;
+            useKnockAIStore.setState((state) => ({
+              teamDrawings: [...state.teamDrawings.filter((x) => x.id !== d.id), d],
+            }));
           }
+
           if (payload.eventType === 'DELETE') {
             const id = String((payload.old as Record<string, any>).id);
-            setDrawings((prev) => prev.filter((x) => x.id !== id));
+            useKnockAIStore.setState((state) => ({
+              teamDrawings: state.teamDrawings.filter((x) => x.id !== id),
+            }));
           }
         }
       )
@@ -84,6 +80,4 @@ export function useTeamDrawings(teamId: string | undefined, userId: string | und
       }
     };
   }, [teamId, userId]);
-
-  return { drawings, addLocalDrawing, removeLocalDrawing };
 }

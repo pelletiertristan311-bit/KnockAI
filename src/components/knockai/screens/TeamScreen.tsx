@@ -10,9 +10,9 @@ const ROLE_LABELS: Record<string, Record<UserRole, string>> = {
 };
 
 const T: Record<string, Record<string, string>> = {
-  en: { team: 'Team', noTeam: "You're not on a team yet", joinPrompt: 'Join or create a team to collaborate with your colleagues.', joinTeam: 'Join a Team', createTeam: 'Create a Team', members: 'Members', dates: 'Dates', routes: 'Routes', leaderboard: 'Leaderboard', today: 'Today', allTime: 'All Time', doors: 'Doors', sales: 'Sales', online: 'Online', offline: 'Offline', noRoutes: 'No team routes yet.', share: 'Share Code', inviteCode: 'Invite Code', editTeamName: 'Edit Team Name', save: 'Save', cancel: 'Cancel', role: 'Role', promote: 'Promote', demote: 'Demote', remove: 'Remove', topSeller: 'Top Seller', members2: 'Members', noSales: 'No sales yet', availableDates: 'Available dates', addDate: 'Add date', addDateTitle: 'Add a date', addDay: 'Add day', addDayTitle: 'Add a full day', addDayDesc: 'Adds 3 slots: 8:30, 12:00 and 15:00', noDates: 'No dates yet. Add one to get started!', city: 'City', date: 'Date', time: 'Time', notes: 'Notes', notesPlaceholder: 'Notes (optional, e.g. Morning only)', add: 'Add', book: 'Book', bookedBy: 'Booked by', available: 'Available', deleteQ: 'Delete?', requiredCity: 'Required city', enterCity: 'Enter the city to book', cityLockedLabel: 'City required' },
-  fr: { team: 'Équipe', noTeam: "Vous n'êtes pas encore dans une équipe", joinPrompt: 'Rejoignez ou créez une équipe pour collaborer.', joinTeam: 'Rejoindre', createTeam: 'Créer une équipe', members: 'Membres', dates: 'Dates', routes: 'Routes', leaderboard: 'Classement', today: "Aujourd'hui", allTime: 'Total', doors: 'Portes', sales: 'Ventes', online: 'En ligne', offline: 'Hors ligne', noRoutes: 'Aucune route.', share: 'Partager', inviteCode: "Code d'invitation", editTeamName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', role: 'Rôle', promote: 'Promouvoir', demote: 'Rétrograder', remove: 'Retirer', topSeller: 'Top vendeur', members2: 'Membres', noSales: 'Aucune vente', availableDates: 'Dates disponibles', addDate: 'Ajouter une date', addDateTitle: 'Ajouter une date', addDay: 'Ajouter un jour', addDayTitle: 'Ajouter une journée complète', addDayDesc: 'Ajoute 3 disponibilités : 8h30, 12h et 15h', noDates: 'Aucune date. Ajoutez-en une!', city: 'Ville', date: 'Date', time: 'Heure', notes: 'Notes', notesPlaceholder: 'Notes (optionnel, ex: Matin seulement)', add: 'Ajouter', book: 'Réserver', bookedBy: 'Réservé par', available: 'Disponible', deleteQ: 'Supprimer?', requiredCity: 'Ville obligatoire', enterCity: 'Entrez la ville pour réserver', cityLockedLabel: 'Ville requise' },
-  es: { team: 'Equipo', noTeam: 'Aún no estás en un equipo', joinPrompt: 'Únete o crea un equipo para colaborar.', joinTeam: 'Unirse', createTeam: 'Crear equipo', members: 'Miembros', dates: 'Fechas', routes: 'Rutas', leaderboard: 'Ranking', today: 'Hoy', allTime: 'Total', doors: 'Puertas', sales: 'Ventas', online: 'En línea', offline: 'Desconectado', noRoutes: 'Sin rutas.', share: 'Compartir', inviteCode: 'Código', editTeamName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', role: 'Rol', promote: 'Promover', demote: 'Degradar', remove: 'Eliminar', topSeller: 'Top vendedor', members2: 'Miembros', noSales: 'Sin ventas', availableDates: 'Fechas disponibles', addDate: 'Agregar fecha', addDateTitle: 'Agregar fecha', addDay: 'Agregar día', addDayTitle: 'Agregar un día completo', addDayDesc: 'Agrega 3 turnos: 8:30, 12:00 y 15:00', noDates: 'Sin fechas aún.', city: 'Ciudad', date: 'Fecha', time: 'Hora', notes: 'Notas', notesPlaceholder: 'Notas (opcional)', add: 'Agregar', book: 'Reservar', bookedBy: 'Reservado por', available: 'Disponible', deleteQ: '¿Eliminar?', requiredCity: 'Ciudad requerida', enterCity: 'Ingresa la ciudad para reservar', cityLockedLabel: 'Ciudad requerida' },
+  en: { team: 'Team', noTeam: "You're not on a team yet", joinPrompt: 'Join or create a team to collaborate with your colleagues.', joinTeam: 'Join a Team', createTeam: 'Create a Team', members: 'Members', dates: 'Dates', routes: 'Routes', leaderboard: 'Leaderboard', today: 'Today', allTime: 'All Time', doors: 'Doors', sales: 'Sales', online: 'Online', offline: 'Offline', noRoutes: 'No team routes yet.', share: 'Share Code', inviteCode: 'Invite Code', editTeamName: 'Edit Team Name', save: 'Save', cancel: 'Cancel', role: 'Role', promote: 'Promote', demote: 'Demote', remove: 'Remove', topSeller: 'Top Seller', members2: 'Members', noSales: 'No sales yet', availableDates: 'Available dates', addDate: 'Add date', addDateTitle: 'Add a date', addDay: 'Add day', addDayTitle: 'Add a full day', addDayDesc: 'Adds 3 slots: 8:30, 12:00 and 15:00', noDates: 'No dates yet. Add one to get started!', city: 'City', date: 'Date', time: 'Time', notes: 'Notes', notesPlaceholder: 'Notes (optional, e.g. Morning only)', add: 'Add', book: 'Book', bookedBy: 'Booked by', available: 'Available', deleteQ: 'Delete?', requiredCity: 'Required city', enterCity: 'Enter the city to book', cityLockedLabel: 'City required', allCities: 'All cities', other: 'Other', noResults: 'No dates for this city' },
+  fr: { team: 'Équipe', noTeam: "Vous n'êtes pas encore dans une équipe", joinPrompt: 'Rejoignez ou créez une équipe pour collaborer.', joinTeam: 'Rejoindre', createTeam: 'Créer une équipe', members: 'Membres', dates: 'Dates', routes: 'Routes', leaderboard: 'Classement', today: "Aujourd'hui", allTime: 'Total', doors: 'Portes', sales: 'Ventes', online: 'En ligne', offline: 'Hors ligne', noRoutes: 'Aucune route.', share: 'Partager', inviteCode: "Code d'invitation", editTeamName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', role: 'Rôle', promote: 'Promouvoir', demote: 'Rétrograder', remove: 'Retirer', topSeller: 'Top vendeur', members2: 'Membres', noSales: 'Aucune vente', availableDates: 'Dates disponibles', addDate: 'Ajouter une date', addDateTitle: 'Ajouter une date', addDay: 'Ajouter un jour', addDayTitle: 'Ajouter une journée complète', addDayDesc: 'Ajoute 3 disponibilités : 8h30, 12h et 15h', noDates: 'Aucune date. Ajoutez-en une!', city: 'Ville', date: 'Date', time: 'Heure', notes: 'Notes', notesPlaceholder: 'Notes (optionnel, ex: Matin seulement)', add: 'Ajouter', book: 'Réserver', bookedBy: 'Réservé par', available: 'Disponible', deleteQ: 'Supprimer?', requiredCity: 'Ville obligatoire', enterCity: 'Entrez la ville pour réserver', cityLockedLabel: 'Ville requise', allCities: 'Toutes les villes', other: 'Autre', noResults: 'Aucune date pour cette ville' },
+  es: { team: 'Equipo', noTeam: 'Aún no estás en un equipo', joinPrompt: 'Únete o crea un equipo para colaborar.', joinTeam: 'Unirse', createTeam: 'Crear equipo', members: 'Miembros', dates: 'Fechas', routes: 'Rutas', leaderboard: 'Ranking', today: 'Hoy', allTime: 'Total', doors: 'Puertas', sales: 'Ventas', online: 'En línea', offline: 'Desconectado', noRoutes: 'Sin rutas.', share: 'Compartir', inviteCode: 'Código', editTeamName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', role: 'Rol', promote: 'Promover', demote: 'Degradar', remove: 'Eliminar', topSeller: 'Top vendedor', members2: 'Miembros', noSales: 'Sin ventas', availableDates: 'Fechas disponibles', addDate: 'Agregar fecha', addDateTitle: 'Agregar fecha', addDay: 'Agregar día', addDayTitle: 'Agregar un día completo', addDayDesc: 'Agrega 3 turnos: 8:30, 12:00 y 15:00', noDates: 'Sin fechas aún.', city: 'Ciudad', date: 'Fecha', time: 'Hora', notes: 'Notas', notesPlaceholder: 'Notas (opcional)', add: 'Agregar', book: 'Reservar', bookedBy: 'Reservado por', available: 'Disponible', deleteQ: '¿Eliminar?', requiredCity: 'Ciudad requerida', enterCity: 'Ingresa la ciudad para reservar', cityLockedLabel: 'Ciudad requerida', allCities: 'Todas las ciudades', other: 'Otro', noResults: 'Sin fechas para esta ciudad' },
 };
 
 export default function TeamScreen() {
@@ -240,6 +240,8 @@ function RoleModal({ member, onClose, updateMemberRole, t, rl, currentUserRole }
 }
 
 /* ─── Dates Tab ─── */
+const PRESET_CITIES = ['Hudson', 'Vaudreuil', 'Saint-Lazare', 'Senneville'];
+
 function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDate, unclaimTeamDate, deleteTeamDate, team, teamSettings, t }: any) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddDayModal, setShowAddDayModal] = useState(false);
@@ -247,6 +249,34 @@ function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDa
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [filterCity, setFilterCity] = useState('');
+  const [filterCustom, setFilterCustom] = useState('');
+  const [filterIsCustom, setFilterIsCustom] = useState(false);
+  const [showFilterDrop, setShowFilterDrop] = useState(false);
+
+  const existingCities = [...new Set((dates || []).map((d: TeamDate) => d.city).filter(Boolean) as string[])];
+  const filterOptions = [...new Set([...PRESET_CITIES, ...existingCities])];
+  const activeFilter = filterIsCustom ? filterCustom.trim() : filterCity;
+  const filterLabel = filterIsCustom ? (filterCustom.trim() || t.other + '...') : (filterCity || t.allCities);
+
+  const handleSelectCity = (city: string) => {
+    if (city === '__autre__') {
+      setFilterIsCustom(true);
+      setFilterCity('');
+    } else {
+      setFilterCity(city);
+      setFilterIsCustom(false);
+      setFilterCustom('');
+      setShowFilterDrop(false);
+    }
+  };
+
+  const handleClearFilter = () => {
+    setFilterCity('');
+    setFilterIsCustom(false);
+    setFilterCustom('');
+    setShowFilterDrop(false);
+  };
 
   const prevMonth = () => setViewMonth((prev) => {
     const d = new Date(prev.year, prev.month - 1);
@@ -265,15 +295,25 @@ function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDa
     return y === viewMonth.year && m === viewMonth.month + 1;
   });
 
+  const filteredMonthDates = activeFilter
+    ? monthDates.filter((d: TeamDate) => d.city === activeFilter)
+    : monthDates;
+
   const now = new Date();
-  const available = [...monthDates]
+  const available = [...filteredMonthDates]
     .filter((d: TeamDate) => !d.claimedBy && new Date(`${d.date}T${d.time}`) >= now)
     .sort((a: TeamDate, b: TeamDate) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
-  const booked = [...monthDates]
+  const booked = [...filteredMonthDates]
     .filter((d: TeamDate) => d.claimedBy || new Date(`${d.date}T${d.time}`) < now)
     .sort((a: TeamDate, b: TeamDate) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
 
   const sectionLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#4B5563', textTransform: 'uppercase', letterSpacing: 0.8, padding: '4px 2px' };
+
+  const dropItem = (active: boolean): React.CSSProperties => ({
+    display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', borderRadius: 8,
+    border: 'none', background: active ? 'rgba(26,111,214,0.2)' : 'transparent',
+    color: active ? '#60A5FA' : '#E5E7EB', fontSize: 13, fontWeight: active ? 700 : 500, cursor: 'pointer',
+  });
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -283,22 +323,69 @@ function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDa
         <button onClick={nextMonth} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#E5E7EB', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
       </div>
 
-      {isManager && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '0 16px 10px' }}>
-          <button onClick={() => setShowAddDayModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(139,92,246,0.5)', background: 'rgba(139,92,246,0.12)', color: '#A78BFA', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-            + {t.addDay}
+      {/* Toolbar: city filter left, add buttons right */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px 10px' }}>
+        {/* City filter */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+          <button
+            onClick={() => setShowFilterDrop((v) => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 11px', borderRadius: 10, border: `1px solid ${activeFilter ? 'rgba(26,111,214,0.6)' : 'rgba(255,255,255,0.12)'}`, background: activeFilter ? 'rgba(26,111,214,0.15)' : 'rgba(255,255,255,0.06)', color: activeFilter ? '#60A5FA' : '#9CA3AF', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
+          >
+            <span>🏙</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{filterLabel}</span>
+            {activeFilter ? (
+              <span onClick={(e) => { e.stopPropagation(); handleClearFilter(); }} style={{ color: '#9CA3AF', fontSize: 15, lineHeight: 1, marginLeft: 1 }}>×</span>
+            ) : (
+              <span style={{ fontSize: 9, opacity: 0.6 }}>▼</span>
+            )}
           </button>
-          <button onClick={() => setShowAddModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-            + {t.addDate}
-          </button>
+
+          {showFilterDrop && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setShowFilterDrop(false)} />
+              <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 1000, background: '#1E293B', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, minWidth: 185, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', maxHeight: 270, overflowY: 'auto' }}>
+                <button onClick={handleClearFilter} style={dropItem(!filterCity && !filterIsCustom)}>{t.allCities}</button>
+                {filterOptions.map((c) => (
+                  <button key={c} onClick={() => handleSelectCity(c)} style={dropItem(filterCity === c && !filterIsCustom)}>{c}</button>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 4, paddingTop: 4 }}>
+                  <button onClick={() => handleSelectCity('__autre__')} style={dropItem(filterIsCustom)}>{t.other}...</button>
+                  {filterIsCustom && (
+                    <input
+                      type="text"
+                      value={filterCustom}
+                      onChange={(e) => setFilterCustom(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setShowFilterDrop(false); }}
+                      placeholder={t.city + '...'}
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ width: '100%', marginTop: 6, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(26,111,214,0.4)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+        {/* Manager add buttons */}
+        {isManager && (
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => setShowAddDayModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(139,92,246,0.5)', background: 'rgba(139,92,246,0.12)', color: '#A78BFA', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              + {t.addDay}
+            </button>
+            <button onClick={() => setShowAddModal(true)} style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              + {t.addDate}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {monthDates.length === 0 ? (
+        {filteredMonthDates.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', color: '#4B5563', fontSize: 14, textAlign: 'center', gap: 10 }}>
-            <span style={{ fontSize: 40 }}>📅</span>
-            <span>{t.noDates}</span>
+            <span style={{ fontSize: 40 }}>{activeFilter ? '🔍' : '📅'}</span>
+            <span>{activeFilter ? t.noResults : t.noDates}</span>
           </div>
         ) : (
           <>

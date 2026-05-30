@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
 import { useTeamPins } from '@/hooks/knockai/useTeamPins';
+import { useTeamDrawings } from '@/hooks/knockai/useTeamDrawings';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -18,12 +19,13 @@ import StatsModal from './modals/StatsModal';
 import DemoTutorialOverlay from './DemoTutorialOverlay';
 
 export default function KnockAIApp() {
-  const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pinNotifications, dismissPinNotification, pollTeamData, pollTeamPins, user, team } = useKnockAIStore();
+  const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pinNotifications, dismissPinNotification, user, team } = useKnockAIStore();
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // Supabase Realtime — instant pin sync across team members
+  // Supabase Realtime — instant pin and drawing sync across team members
   const realtimeStatus = useTeamPins(team?.id, user?.id);
+  useTeamDrawings(team?.id, user?.id);
 
   useEffect(() => {
     setMounted(true);
@@ -49,15 +51,22 @@ export default function KnockAIApp() {
       Notification.requestPermission().catch(() => {});
     }
 
+    // Push local data to Redis + pull team data immediately on startup
+    const s = useKnockAIStore.getState();
+    if (s.isAuthenticated && s.team?.id) {
+      s.pushToTeam();
+      s.pollTeamData();
+    }
+
+    // pollTeamData keeps team members, routes, dates and sale notifications in sync via Redis.
+    // Pins and drawings are handled in real-time by useTeamPins / useTeamDrawings (Supabase Realtime).
     const pollInterval = setInterval(() => { useKnockAIStore.getState().pollTeamData(); }, 15000);
-    const pinPollInterval = setInterval(() => { useKnockAIStore.getState().pollTeamPins(); }, 3000);
 
     return () => {
       mq.removeEventListener('change', handler);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       clearInterval(pollInterval);
-      clearInterval(pinPollInterval);
     };
   }, []);
 
