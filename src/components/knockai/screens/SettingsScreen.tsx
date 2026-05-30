@@ -33,6 +33,9 @@ const T: Record<string, Record<string, string>> = {
     deleteTeam: 'Delete Team', transferOwner: 'Transfer Ownership', myAccount: 'My Account',
     shareLocation: 'Share my location', showMemberTrails: 'See member trails',
     salesNotif: 'Sales notifications', dailyGoalSync: 'Sync daily goals',
+    locationBtn: 'Enable Location', locationGranted: 'Location enabled ✓',
+    locationDeniedMsg: 'Location denied. To enable: Settings › Privacy & Security › Location Services › Safari › While Using the App',
+    locationUnavailable: 'Geolocation is not supported on this device.',
   },
   fr: {
     settings: 'Réglages', profile: 'Profil', account: 'Compte', preferences: 'Préférences',
@@ -57,6 +60,9 @@ const T: Record<string, Record<string, string>> = {
     deleteTeam: 'Supprimer l\'équipe', transferOwner: 'Transférer la propriété', myAccount: 'Mon Compte',
     shareLocation: 'Partager ma position', showMemberTrails: 'Voir les traces des membres',
     salesNotif: 'Notif. de ventes d\'équipe', dailyGoalSync: 'Synchroniser les objectifs',
+    locationBtn: 'Activer la localisation', locationGranted: 'Localisation activée ✓',
+    locationDeniedMsg: 'Localisation refusée. Pour l\'activer : Réglages iOS › Confidentialité et sécurité › Service de localisation › Safari › Lors de l\'utilisation',
+    locationUnavailable: 'La géolocalisation n\'est pas disponible sur cet appareil.',
   },
   es: {
     settings: 'Ajustes', profile: 'Perfil', account: 'Cuenta', preferences: 'Preferencias',
@@ -81,6 +87,9 @@ const T: Record<string, Record<string, string>> = {
     deleteTeam: 'Eliminar equipo', transferOwner: 'Transferir propiedad', myAccount: 'Mi Cuenta',
     shareLocation: 'Compartir ubicación', showMemberTrails: 'Ver huellas de miembros',
     salesNotif: 'Notif. de ventas', dailyGoalSync: 'Sincronizar objetivos',
+    locationBtn: 'Activar localización', locationGranted: 'Ubicación activada ✓',
+    locationDeniedMsg: 'Localización denegada. Para activar: Ajustes › Privacidad y seguridad › Localización › Safari › Al usar la app',
+    locationUnavailable: 'La geolocalización no está disponible en este dispositivo.',
   },
 };
 
@@ -133,6 +142,7 @@ export default function SettingsScreen() {
       {/* Preferences */}
       <div data-tour="settings-notifs">
         <Section title={t.preferences}>
+          <LocationPermissionRow t={t} />
           <ToggleRow label={t.pushNotif} value={notifications.push} onChange={(v) => setNotifications({ push: v })} />
           <ToggleRow label={t.chatNotif} value={notifications.chat} onChange={(v) => setNotifications({ chat: v })} />
           <ToggleRow label={t.routeNotif} value={notifications.routes} onChange={(v) => setNotifications({ routes: v })} />
@@ -206,7 +216,7 @@ export default function SettingsScreen() {
 
       {/* Version */}
       <div style={{ textAlign: 'center', padding: '20px 16px 8px', color: '#374151' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>KnockAI v1.2</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>KnockAI v1.3</div>
         <div style={{ fontSize: 11, marginTop: 3 }}>Dernière mise à jour : 10 avril 2026</div>
       </div>
 
@@ -691,6 +701,74 @@ function SettingRow({ label, value, onPress, danger }: { label: string; value?: 
         {onPress && <span style={{ color: '#4B5563', fontSize: 16 }}>›</span>}
       </div>
     </button>
+  );
+}
+
+function LocationPermissionRow({ t }: { t: Record<string, string> }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'granted' | 'denied' | 'unavailable'>('idle');
+
+  // Detect existing permission on mount — no prompt triggered
+  useEffect(() => {
+    if (!navigator.permissions) return;
+    navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
+      if (result.state === 'granted') setStatus('granted');
+      else if (result.state === 'denied') setStatus('denied');
+    }).catch(() => {});
+  }, []);
+
+  const handle = () => {
+    if (!navigator.geolocation) { setStatus('unavailable'); return; }
+    setStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      () => setStatus('granted'),
+      (err) => setStatus(err.code === 1 ? 'denied' : 'unavailable'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  if (status === 'granted') {
+    return (
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📍</div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#10B981' }}>{t.locationGranted}</div>
+          <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>L&apos;app peut accéder à ta position GPS</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <button
+        onClick={handle}
+        disabled={status === 'loading'}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', borderRadius: 12, border: `1px solid ${status === 'denied' ? 'rgba(239,68,68,0.35)' : 'rgba(26,111,214,0.35)'}`, background: status === 'denied' ? 'rgba(239,68,68,0.08)' : 'rgba(26,111,214,0.1)', cursor: status === 'loading' ? 'default' : 'pointer', textAlign: 'left' }}
+      >
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: status === 'denied' ? 'rgba(239,68,68,0.15)' : 'rgba(26,111,214,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+          {status === 'loading' ? '⏳' : status === 'denied' ? '🚫' : '📍'}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: status === 'denied' ? '#EF4444' : '#60A5FA' }}>
+            {status === 'loading' ? 'Détection en cours…' : status === 'denied' ? 'Localisation refusée' : t.locationBtn}
+          </div>
+          <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>
+            {status === 'denied' ? 'Voir les instructions pour l\'activer' : 'Requis pour afficher ta position sur la carte'}
+          </div>
+        </div>
+        {status === 'idle' && <span style={{ color: '#4B5563', fontSize: 16, flexShrink: 0 }}>›</span>}
+      </button>
+      {status === 'denied' && (
+        <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)', fontSize: 12, color: '#FCA5A5', lineHeight: 1.8 }}>
+          {t.locationDeniedMsg}
+        </div>
+      )}
+      {status === 'unavailable' && (
+        <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(107,114,128,0.08)', fontSize: 12, color: '#9CA3AF', lineHeight: 1.5 }}>
+          {t.locationUnavailable}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,8 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { useKnockAIStore, Pin, PinType } from '@/lib/knockai/store';
+import { useKnockAIStore, Pin, PinType, type TeamDrawing } from '@/lib/knockai/store';
 import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
-import { useTeamDrawings, type TeamDrawing } from '@/hooks/knockai/useTeamDrawings';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -20,6 +19,25 @@ const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: stri
 
 const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6' };
 const PIN_ICONS: Record<PinType, string> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: 'AI' };
+const DRAW_COLORS = ['#EF4444', '#1F2937', '#3B82F6'];
+
+// Teammates' drawings are shown in bright red to distinguish from own
+const TEAMMATE_DRAWING_COLOR = '#FF3B30';
+
+function addMapLayers(map: any) {
+  map.addSource('routes-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'routes-fill', type: 'fill', source: 'routes-data', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.18 } });
+  map.addLayer({ id: 'routes-outline', type: 'line', source: 'routes-data', paint: { 'line-color': '#8B5CF6', 'line-width': 2.5, 'line-opacity': 0.9 } });
+  map.addSource('draw-preview', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'draw-fill', type: 'fill', source: 'draw-preview', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.12 } });
+  map.addLayer({ id: 'draw-outline', type: 'line', source: 'draw-preview', paint: { 'line-color': '#8B5CF6', 'line-width': 2, 'line-dasharray': [3, 2] } });
+  map.addSource('street-drawings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'street-drawings-line', type: 'line', source: 'street-drawings', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'isOwn'], true], ['get', 'color'], TEAMMATE_DRAWING_COLOR], 'line-width': 4, 'line-opacity': 0.9 } });
+  map.addSource('street-drawing-active', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'street-drawing-active-line', type: 'line', source: 'street-drawing-active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [3, 2] } });
+  map.addSource('street-drawing-dots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'street-drawing-dots-layer', type: 'circle', source: 'street-drawing-dots', paint: { 'circle-radius': 5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
+}
 
 export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeStatus?: RealtimeStatus }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -29,12 +47,21 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const routeMarkersRef = useRef<any[]>([]);
   const userMarkerRef = useRef<any>(null);
   const teammateMarkersRef = useRef<any[]>([]);
+  const isStreetDrawingRef = useRef(false);
+  const streetDrawingPointsRef = useRef<[number, number][]>([]);
+  const drawingColorRef = useRef('#EF4444');
+  const finishStreetDrawingRef = useRef<() => void>(() => {});
+  const isDrawingRef = useRef(false);
+  const drawingPointsRef = useRef<[number, number][]>([]);
+  const drawDotMarkersRef = useRef<any[]>([]);
+  const isDrawingErasingRef = useRef(false);
+  const drawingsRef = useRef<TeamDrawing[]>([]);
+
   const [followMode, setFollowMode] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState('');
-  const [heading, setHeading] = useState<number | null>(null);
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [routeName, setRouteName] = useState('');
   const [routeType, setRouteType] = useState<'individual' | 'team'>('individual');
@@ -43,28 +70,18 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [geocoding, setGeocoding] = useState(false);
   const [mapStyleVersion, setMapStyleVersion] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [showTrailPanel, setShowTrailPanel] = useState(false);
-  const [isErasing, setIsErasing] = useState(false);
-  const isErasingRef = useRef(false);
-  const lastTrailRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
-  const [showAIRoute, setShowAIRoute] = useState(false);
+  const [isDrawingErasing, setIsDrawingErasing] = useState(false);
+
   const [showRoutesList, setShowRoutesList] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<string | null>(null);
-  const saleFlashMarkersRef = useRef<any[]>([]);
-  const prevSaleNotifCountRef = useRef(0);
   const [drawingPoints, setDrawingPoints] = useState<[number, number][]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const isDrawingRef = useRef(false);
-  const drawingPointsRef = useRef<[number, number][]>([]);
-  const drawDotMarkersRef = useRef<any[]>([]);
   const [isStreetDrawing, setIsStreetDrawing] = useState(false);
-  const isStreetDrawingRef = useRef(false);
   const [streetDrawingPoints, setStreetDrawingPoints] = useState<[number, number][]>([]);
-  const streetDrawingPointsRef = useRef<[number, number][]>([]);
   const [drawingColor, setDrawingColor] = useState('#EF4444');
-  const drawingColorRef = useRef('#EF4444');
+
   drawingColorRef.current = drawingColor;
-  const finishStreetDrawingRef = useRef<() => void>(() => {});
+  isDrawingErasingRef.current = isDrawingErasing;
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -74,31 +91,15 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     return () => mq.removeEventListener('change', h);
   }, []);
 
-  const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team, setUserLocation, setPinFilter, toggleAI, openAddPinModal, openEditPinModal, addPin, isClockedIn, addRoute, deleteRoute, mapTheme, trailPoints, trailView, addTrailPoint, removeTrailPointsNear, clearMyTrail, setTrailView, saleNotifications } = useKnockAIStore();
+  const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team,
+    setUserLocation, setPinFilter, toggleAI, openAddPinModal, openEditPinModal, addPin,
+    addRoute, deleteRoute, mapTheme, teamDrawings, addTeamDrawing, removeTeamDrawing } = useKnockAIStore();
 
-  const { drawings, addLocalDrawing } = useTeamDrawings(team?.id, user?.id);
+  drawingsRef.current = teamDrawings;
 
   const filteredPins = useMemo(() => pinFilter === 'all' ? pins : pins.filter((p) => p.type === pinFilter), [pins, pinFilter]);
   const searchResults = useMemo(() => searchQuery ? pins.filter((p) => p.leadName?.toLowerCase().includes(searchQuery.toLowerCase()) || p.address.toLowerCase().includes(searchQuery.toLowerCase())) : [], [pins, searchQuery]);
   const isManagerOrOwner = user?.role === 'manager' || user?.role === 'owner';
-
-  const aiSuggestion = useMemo(() => {
-    if (pins.length < 3) return null;
-    const recent = pins.filter((p) => { const d = new Date(p.placedAt); const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7); return d >= cutoff; });
-    if (recent.length < 3) return null;
-    const CELL = 0.001;
-    const grid: Record<string, { lat: number; lng: number; doors: number; sales: number }> = {};
-    recent.forEach((p) => {
-      const key = `${Math.round(p.lat / CELL)},${Math.round(p.lng / CELL)}`;
-      if (!grid[key]) grid[key] = { lat: p.lat, lng: p.lng, doors: 0, sales: 0 };
-      grid[key].doors++;
-      if (p.type === 'sale') grid[key].sales++;
-    });
-    const cells = Object.values(grid);
-    if (!cells.length) return null;
-    const best = cells.reduce((a, b) => (b.sales * 3 + b.doors) > (a.sales * 3 + a.doors) ? b : a);
-    return { lat: best.lat, lng: best.lng, doors: best.doors, sales: best.sales, convRate: best.doors > 0 ? Math.round((best.sales / best.doors) * 100) : 0 };
-  }, [pins]);
 
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
@@ -110,6 +111,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
   };
 
+  // Map init
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
     import('maplibre-gl').then((ml) => {
@@ -122,7 +124,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       }
       const { userLocation: initLoc, mapTheme: initTheme } = useKnockAIStore.getState();
       const initCenter: [number, number] = initLoc ? [initLoc.lng, initLoc.lat] : [-73.5673, 45.5017];
-      const styleUrl = initTheme === 'dark' ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+      const styleUrl = initTheme === 'dark' ? 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=l7T65duPkEOuA9Ji3cmf' : 'https://api.maptiler.com/maps/streets-v2/style.json?key=l7T65duPkEOuA9Ji3cmf';
       try {
         const map = new ml.Map({ container: mapRef.current!, style: styleUrl, center: initCenter, zoom: 15, attributionControl: false });
         let loaded = false;
@@ -131,24 +133,10 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           try { map.setPaintProperty('water', 'fill-color', '#C5E8FF'); } catch (_) {}
           try { map.setPaintProperty('waterway', 'line-color', '#C5E8FF'); } catch (_) {}
           ['park', 'landuse_park', 'landcover_grass', 'grass', 'landuse_grass', 'landuse-park'].forEach((layer) => { try { map.setPaintProperty(layer, 'fill-color', '#adc4ad'); } catch (_) {} });
-          map.addSource('routes-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-          map.addLayer({ id: 'routes-fill', type: 'fill', source: 'routes-data', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.18 } });
-          map.addLayer({ id: 'routes-outline', type: 'line', source: 'routes-data', paint: { 'line-color': '#8B5CF6', 'line-width': 2.5, 'line-opacity': 0.9 } });
-          map.addSource('draw-preview', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-          map.addLayer({ id: 'draw-fill', type: 'fill', source: 'draw-preview', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.12 } });
-          map.addLayer({ id: 'draw-outline', type: 'line', source: 'draw-preview', paint: { 'line-color': '#8B5CF6', 'line-width': 2, 'line-dasharray': [3, 2] } });
-          map.addSource('trail-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-          map.addLayer({ id: 'trail-line', type: 'line', source: 'trail-data', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'isOwn'], true], '#EF4444', '#8B5CF6'], 'line-width': 3, 'line-opacity': 0.8 } });
-          map.addSource('street-drawings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-          map.addLayer({ id: 'street-drawings-line', type: 'line', source: 'street-drawings', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.9 } });
-          map.addSource('street-drawing-active', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-          map.addLayer({ id: 'street-drawing-active-line', type: 'line', source: 'street-drawing-active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [3, 2] } });
-          map.addSource('street-drawing-dots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-          map.addLayer({ id: 'street-drawing-dots-layer', type: 'circle', source: 'street-drawing-dots', paint: { 'circle-radius': 5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
+          addMapLayers(map);
           setMapLoaded(true);
           setMapStyleVersion((v) => v + 1);
           map.on('click', (e: any) => {
-            if (isErasingRef.current) { useKnockAIStore.getState().removeTrailPointsNear(e.lngLat.lat, e.lngLat.lng, 60); return; }
             if (isStreetDrawingRef.current) {
               if ((e.originalEvent as MouseEvent).detail > 1) return;
               const pt: [number, number] = [e.lngLat.lng, e.lngLat.lat];
@@ -167,10 +155,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             }
           });
           map.on('dblclick', (e: any) => {
-            if (isStreetDrawingRef.current) {
-              e.preventDefault();
-              finishStreetDrawingRef.current();
-            }
+            if (isStreetDrawingRef.current) { e.preventDefault(); finishStreetDrawingRef.current(); }
           });
           map.on('dragstart', () => setFollowMode(false));
         });
@@ -181,34 +166,23 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     return () => { if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; } };
   }, []);
 
+  // Map theme change
   useEffect(() => {
     if (!mapInstance.current || !mapLoaded) return;
     const map = mapInstance.current;
-    const styleUrl = mapTheme === 'dark' ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+    const styleUrl = mapTheme === 'dark' ? 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=l7T65duPkEOuA9Ji3cmf' : 'https://api.maptiler.com/maps/streets-v2/style.json?key=l7T65duPkEOuA9Ji3cmf';
     map.setStyle(styleUrl);
     map.once('style.load', () => {
       if (mapTheme === 'light') {
         try { map.setPaintProperty('water', 'fill-color', '#C5E8FF'); } catch (_) {}
         ['park', 'landuse_park', 'landcover_grass', 'grass'].forEach((l) => { try { map.setPaintProperty(l, 'fill-color', '#adc4ad'); } catch (_) {} });
       }
-      map.addSource('routes-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'routes-fill', type: 'fill', source: 'routes-data', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.18 } });
-      map.addLayer({ id: 'routes-outline', type: 'line', source: 'routes-data', paint: { 'line-color': '#8B5CF6', 'line-width': 2.5, 'line-opacity': 0.9 } });
-      map.addSource('draw-preview', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'draw-fill', type: 'fill', source: 'draw-preview', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.12 } });
-      map.addLayer({ id: 'draw-outline', type: 'line', source: 'draw-preview', paint: { 'line-color': '#8B5CF6', 'line-width': 2, 'line-dasharray': [3, 2] } });
-      map.addSource('trail-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'trail-line', type: 'line', source: 'trail-data', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'isOwn'], true], '#EF4444', '#8B5CF6'], 'line-width': 3, 'line-opacity': 0.8 } });
-      map.addSource('street-drawings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'street-drawings-line', type: 'line', source: 'street-drawings', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.9 } });
-      map.addSource('street-drawing-active', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'street-drawing-active-line', type: 'line', source: 'street-drawing-active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [3, 2] } });
-      map.addSource('street-drawing-dots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'street-drawing-dots-layer', type: 'circle', source: 'street-drawing-dots', paint: { 'circle-radius': 5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
+      addMapLayers(map);
       setMapStyleVersion((v) => v + 1);
     });
   }, [mapTheme, mapLoaded]);
 
+  // Pin markers
   useEffect(() => {
     if (!mapInstance.current || !mapLoaded || !maplibreRef.current) return;
     const ml = maplibreRef.current;
@@ -218,11 +192,18 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     filteredPins.forEach((pin) => {
       const isOwn = pin.userId === myId;
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'width:40px;height:40px;cursor:pointer;';
+      wrapper.style.cssText = 'position:relative;width:40px;height:40px;cursor:pointer;overflow:visible;';
       const inner = document.createElement('div');
       inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${pin.type === 'ai_knocked' ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
       inner.textContent = PIN_ICONS[pin.type];
       wrapper.appendChild(inner);
+      const civicNumber = pin.address?.match(/^\d+/)?.[0];
+      if (civicNumber) {
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'position:absolute;top:43px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.62);color:#fff;font-size:10px;font-weight:700;font-family:Inter,sans-serif;padding:2px 5px;border-radius:4px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,0.18);line-height:1.3;';
+        lbl.textContent = civicNumber;
+        wrapper.appendChild(lbl);
+      }
       if (!isOwn) {
         const badge = document.createElement('div');
         const initials = pin.placedByName.split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
@@ -234,11 +215,11 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       wrapper.addEventListener('mouseleave', () => { inner.style.transform = 'scale(1)'; });
       wrapper.addEventListener('click', (e) => { e.stopPropagation(); openEditPinModal(pin); });
       const m = new ml.Marker({ element: wrapper }).setLngLat([pin.lng, pin.lat]).addTo(mapInstance.current!);
-      m.getElement().style.position = 'absolute';
       markersRef.current.push(m);
     });
   }, [filteredPins, mapLoaded, user?.id]);
 
+  // Route polygons
   useEffect(() => {
     if (!mapInstance.current || mapStyleVersion === 0) return;
     const src = mapInstance.current.getSource('routes-data');
@@ -256,11 +237,11 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       el.style.cssText = 'padding:6px 14px;border-radius:20px;background:rgba(139,92,246,0.92);color:white;font-size:13px;font-weight:800;white-space:nowrap;border:2px solid rgba(255,255,255,0.35);';
       el.textContent = route.name;
       const rm = new ml.Marker({ element: el }).setLngLat([lngs.reduce((a, b) => a + b, 0) / lngs.length, lats.reduce((a, b) => a + b, 0) / lats.length]).addTo(mapInstance.current!);
-      rm.getElement().style.position = 'absolute';
       routeMarkersRef.current.push(rm);
     });
   }, [routes, mapStyleVersion]);
 
+  // Route drawing preview
   useEffect(() => {
     if (!mapInstance.current || mapStyleVersion === 0) return;
     const src = mapInstance.current.getSource('draw-preview');
@@ -277,38 +258,25 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const el = document.createElement('div');
       el.style.cssText = `width:${i === 0 ? 14 : 10}px;height:${i === 0 ? 14 : 10}px;border-radius:50%;background:${i === 0 ? '#fff' : '#8B5CF6'};border:2px solid #8B5CF6;`;
       const dm = new ml.Marker({ element: el }).setLngLat(pt).addTo(mapInstance.current!);
-      dm.getElement().style.position = 'absolute';
       drawDotMarkersRef.current.push(dm);
     });
   }, [drawingPoints, mapStyleVersion]);
 
-  useEffect(() => {
-    if (!mapInstance.current || mapStyleVersion === 0) return;
-    const src = mapInstance.current.getSource('trail-data');
-    if (!src) return;
-    if (trailView === 'off') { src.setData({ type: 'FeatureCollection', features: [] }); return; }
-    const myId = user?.id;
-    const byUser: Record<string, { lat: number; lng: number; timestamp: string }[]> = {};
-    trailPoints.forEach((p) => { if (trailView === 'mine' && p.userId !== myId) return; if (!byUser[p.userId]) byUser[p.userId] = []; byUser[p.userId].push(p); });
-    const features = Object.entries(byUser).filter(([, pts]) => pts.length >= 2).map(([uid, pts]) => {
-      const sorted = [...pts].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      return { type: 'Feature' as const, properties: { isOwn: uid === myId }, geometry: { type: 'LineString' as const, coordinates: sorted.map((p) => [p.lng, p.lat]) } };
-    });
-    src.setData({ type: 'FeatureCollection', features });
-  }, [trailPoints, trailView, mapStyleVersion, user?.id]);
-
+  // Team drawings — own = drawn color, teammates = rouge flash
   useEffect(() => {
     if (!mapInstance.current || mapStyleVersion === 0) return;
     const src = mapInstance.current.getSource('street-drawings');
     if (!src) return;
-    const features = drawings.map((d) => ({
+    const myId = user?.id;
+    const features = teamDrawings.map((d) => ({
       type: 'Feature' as const,
-      properties: { color: d.color },
+      properties: { color: d.color, isOwn: d.userId === myId },
       geometry: { type: 'LineString' as const, coordinates: d.coordinates },
     }));
     src.setData({ type: 'FeatureCollection', features });
-  }, [drawings, mapStyleVersion]);
+  }, [teamDrawings, mapStyleVersion, user?.id]);
 
+  // Active street drawing preview
   useEffect(() => {
     if (!mapInstance.current || mapStyleVersion === 0) return;
     const activeSrc = mapInstance.current.getSource('street-drawing-active');
@@ -323,6 +291,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     dotsSrc.setData({ type: 'FeatureCollection', features: streetDrawingPoints.map((pt) => ({ type: 'Feature', properties: { color: drawingColor }, geometry: { type: 'Point', coordinates: pt } })) });
   }, [streetDrawingPoints, drawingColor, mapStyleVersion]);
 
+  // Teammate location markers
   useEffect(() => {
     if (!mapInstance.current || !mapLoaded || !maplibreRef.current) return;
     const ml = maplibreRef.current;
@@ -333,11 +302,11 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       el.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#8B5CF6;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 0 12px rgba(139,92,246,0.6);';
       el.textContent = member.fullName.charAt(0);
       const tm = new ml.Marker({ element: el }).setLngLat([member.lng!, member.lat!]).addTo(mapInstance.current!);
-      tm.getElement().style.position = 'absolute';
       teammateMarkersRef.current.push(tm);
     });
   }, [teamMembers, mapLoaded]);
 
+  // Geolocation watch
   useEffect(() => {
     if (!navigator.geolocation) { setUserLocation({ lat: 45.5017, lng: -73.5673 }); return; }
     const id = navigator.geolocation.watchPosition(
@@ -348,46 +317,93 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     return () => navigator.geolocation.clearWatch(id);
   }, []);
 
+  // User location marker
   useEffect(() => {
     if (!mapInstance.current || !mapLoaded || !userLocation || !maplibreRef.current) return;
     const ml = maplibreRef.current;
     if (userMarkerRef.current) userMarkerRef.current.remove();
     const el = document.createElement('div');
-    el.style.cssText = 'width:36px;height:36px;';
+    el.style.cssText = 'position:relative;width:36px;height:36px;';
     el.innerHTML = `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,102,204,0.2);animation:pulseUser 2s ease-in-out infinite;"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid white;box-shadow:0 2px 8px rgba(0,102,204,0.5);"></div>`;
     userMarkerRef.current = new ml.Marker({ element: el }).setLngLat([userLocation.lng, userLocation.lat]).addTo(mapInstance.current!);
-    userMarkerRef.current.getElement().style.position = 'absolute';
     if (followMode) mapInstance.current!.flyTo({ center: [userLocation.lng, userLocation.lat], duration: 800 });
   }, [userLocation, mapLoaded, followMode]);
 
+  // Disable map interaction when eraser is active
   useEffect(() => {
-    if (!isClockedIn) { lastTrailRef.current = null; return; }
-    const id = setInterval(() => {
-      const { userLocation: loc, user: u } = useKnockAIStore.getState();
-      if (!loc || !u) return;
-      const last = lastTrailRef.current;
-      const now = Date.now();
-      if (!last || now - last.time > 25000 || haversineDist(last.lat, last.lng, loc.lat, loc.lng) > 10) {
-        useKnockAIStore.getState().addTrailPoint({ lat: loc.lat, lng: loc.lng });
-        lastTrailRef.current = { lat: loc.lat, lng: loc.lng, time: now };
-      }
-    }, 5000);
-    return () => clearInterval(id);
-  }, [isClockedIn]);
+    if (!mapInstance.current || !mapLoaded) return;
+    const map = mapInstance.current;
+    if (isDrawingErasing) {
+      map.dragPan.disable();
+      map.scrollZoom.disable();
+      map.touchZoomRotate.disable();
+    } else {
+      map.dragPan.enable();
+      map.scrollZoom.enable();
+      map.touchZoomRotate.enable();
+    }
+  }, [isDrawingErasing, mapLoaded]);
+
+  // Eraser pointer handler — fires on any pointer move over the overlay
+  const handleEraserPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDrawingErasingRef.current || !mapInstance.current) return;
+    if (e.pointerType === 'mouse' && e.buttons === 0) return;
+    const rect = mapRef.current!.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const ll = mapInstance.current.unproject([x, y]);
+    const RADIUS = 40; // metres
+    const toRemove = drawingsRef.current.filter((d) =>
+      d.coordinates.some(([lng, lat]) => haversineDist(lat, ll.lat, lng, ll.lng) < RADIUS)
+    );
+    toRemove.forEach((d) => {
+      removeTeamDrawing(d.id);
+      fetch('/api/knockai/drawings', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: d.id }) }).catch(() => {});
+    });
+  };
+
+  const exitErasing = () => { setIsDrawingErasing(false); isDrawingErasingRef.current = false; };
+
+  const switchToDrawing = (color: string) => {
+    setDrawingColor(color);
+    drawingColorRef.current = color;
+    exitErasing();
+    if (!isStreetDrawingRef.current) {
+      isStreetDrawingRef.current = true;
+      streetDrawingPointsRef.current = [];
+      setStreetDrawingPoints([]);
+      setIsStreetDrawing(true);
+    }
+  };
+
+  const toggleDrawingEraser = () => {
+    if (isDrawingErasing) { exitErasing(); return; }
+    if (isStreetDrawing) cancelStreetDrawing();
+    setIsDrawingErasing(true);
+    isDrawingErasingRef.current = true;
+  };
+
+  const handleTracerToggle = () => {
+    if (isStreetDrawing || isDrawingErasing) {
+      if (isStreetDrawing) cancelStreetDrawing();
+      exitErasing();
+    } else {
+      isStreetDrawingRef.current = true;
+      streetDrawingPointsRef.current = [];
+      setStreetDrawingPoints([]);
+      setIsStreetDrawing(true);
+    }
+  };
 
   const finishStreetDrawing = () => {
     const pts = streetDrawingPointsRef.current;
     if (pts.length < 2 || !team?.id || !user?.id) { cancelStreetDrawing(); return; }
     const drawing: TeamDrawing = {
       id: `drw-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      teamId: team.id,
-      userId: user.id,
-      userName: user.fullName || '',
-      coordinates: pts,
-      color: drawingColorRef.current,
-      createdAt: new Date().toISOString(),
+      teamId: team.id, userId: user.id, userName: user.fullName || '',
+      coordinates: pts, color: drawingColorRef.current, createdAt: new Date().toISOString(),
     };
-    addLocalDrawing(drawing);
+    addTeamDrawing(drawing);
     fetch('/api/knockai/drawings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drawing }) }).catch(() => {});
     isStreetDrawingRef.current = false;
     streetDrawingPointsRef.current = [];
@@ -405,13 +421,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     const dotsSrc = mapInstance.current?.getSource('street-drawing-dots');
     if (activeSrc) activeSrc.setData({ type: 'FeatureCollection', features: [] });
     if (dotsSrc) dotsSrc.setData({ type: 'FeatureCollection', features: [] });
-  };
-
-  const toggleStreetDrawing = () => {
-    if (isStreetDrawing) { cancelStreetDrawing(); return; }
-    if (isDrawing) cancelDrawing();
-    isStreetDrawingRef.current = true;
-    setIsStreetDrawing(true);
   };
 
   const flyToPin = (pin: Pin) => { mapInstance.current?.flyTo({ center: [pin.lng, pin.lat], zoom: 17, duration: 800 }); setShowSearch(false); setSearchQuery(''); };
@@ -448,9 +457,19 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     setDrawingPoints([...next]);
   };
 
+  const isTracerActive = isStreetDrawing || isDrawingErasing;
+
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-      <div ref={mapRef} data-tour="map-area" style={{ width: '100%', height: '100%', cursor: isErasing ? 'crosshair' : 'default' }} />
+      <div ref={mapRef} data-tour="map-area" style={{ width: '100%', height: '100%', cursor: 'default' }} />
+
+      {/* Full-screen transparent overlay when erasing — captures pointer, blocks map pan */}
+      {isDrawingErasing && (
+        <div
+          style={{ position: 'absolute', inset: 0, zIndex: 45, touchAction: 'none', cursor: 'crosshair' }}
+          onPointerMove={handleEraserPointerMove}
+        />
+      )}
 
       {mapError && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0D2B55 0%, #1E1E2E 100%)', padding: 24, gap: 16 }}>
@@ -502,22 +521,23 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         <MapBtn onClick={() => mapInstance.current?.zoomIn()}>+</MapBtn>
         <MapBtn onClick={() => mapInstance.current?.zoomOut()}>−</MapBtn>
         <MapBtn onClick={() => { setRouteLockedMsg(''); setShowRouteModal(true); }}>🗺</MapBtn>
-        <button onClick={() => setShowAIRoute(!showAIRoute)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${aiSuggestion ? 'rgba(16,185,129,0.5)' : 'rgba(0,102,204,0.2)'}`, background: aiSuggestion ? 'rgba(16,185,129,0.15)' : 'rgba(13,43,85,0.9)', color: aiSuggestion ? '#10B981' : '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', fontSize: 18 }}>✨</button>
         <button onClick={() => setShowRoutesList(!showRoutesList)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${showRoutesList ? 'rgba(139,92,246,0.5)' : 'rgba(0,102,204,0.2)'}`, background: showRoutesList ? 'rgba(139,92,246,0.15)' : 'rgba(13,43,85,0.9)', color: showRoutesList ? '#8B5CF6' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', fontSize: 18 }}>📋</button>
+
+        {/* Tracer button + panel (drawing + eraser) */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowTrailPanel(!showTrailPanel)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${trailView !== 'off' ? 'rgba(239,68,68,0.5)' : 'rgba(0,102,204,0.2)'}`, background: trailView !== 'off' ? 'rgba(239,68,68,0.15)' : 'rgba(13,43,85,0.9)', color: trailView !== 'off' ? '#EF4444' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>🦶</button>
-          {isClockedIn && trailView !== 'off' && <div style={{ position: 'absolute', top: -3, right: -3, width: 9, height: 9, borderRadius: '50%', background: '#10B981', border: '2px solid rgba(13,43,85,0.95)' }} />}
-        </div>
-        <div style={{ position: 'relative' }}>
-          <button onClick={toggleStreetDrawing} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isStreetDrawing ? 'rgba(59,130,246,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isStreetDrawing ? 'rgba(59,130,246,0.25)' : 'rgba(13,43,85,0.9)', color: isStreetDrawing ? '#3B82F6' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)' }}>
-            <span style={{ fontSize: 14 }}>✏️</span>
-            <span style={{ fontSize: 7, fontWeight: 700 }}>Tracer</span>
+          <button onClick={handleTracerToggle} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isTracerActive ? 'rgba(59,130,246,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isTracerActive ? 'rgba(59,130,246,0.25)' : 'rgba(13,43,85,0.9)', color: isTracerActive ? '#3B82F6' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)' }}>
+            <span style={{ fontSize: 14 }}>{isDrawingErasing ? '🧹' : '✏️'}</span>
+            <span style={{ fontSize: 7, fontWeight: 700 }}>Trace GPS</span>
           </button>
-          {isStreetDrawing && (
-            <div style={{ position: 'absolute', right: 48, top: 0, display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 8px', borderRadius: 12, background: 'rgba(13,43,85,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-              {[{ color: '#EF4444' }, { color: '#1F2937' }, { color: '#3B82F6' }].map(({ color }) => (
-                <button key={color} onClick={() => { setDrawingColor(color); drawingColorRef.current = color; }} style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: drawingColor === color ? '3px solid white' : '2px solid rgba(255,255,255,0.3)', cursor: 'pointer', flexShrink: 0 }} />
+
+          {/* Tracer side panel — colors + eraser */}
+          {isTracerActive && (
+            <div style={{ position: 'absolute', right: 48, top: 0, display: 'flex', flexDirection: 'column', gap: 6, padding: '8px', borderRadius: 12, background: 'rgba(13,43,85,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+              {DRAW_COLORS.map((color) => (
+                <button key={color} onClick={() => switchToDrawing(color)} style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: isStreetDrawing && drawingColor === color ? '3px solid white' : '2px solid rgba(255,255,255,0.3)', cursor: 'pointer', flexShrink: 0, opacity: isDrawingErasing ? 0.5 : 1 }} />
               ))}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '2px 0' }} />
+              <button onClick={toggleDrawingEraser} title="Gomme" style={{ width: 28, height: 28, borderRadius: 8, border: isDrawingErasing ? '2px solid #F59E0B' : '1px solid rgba(255,255,255,0.25)', background: isDrawingErasing ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)', color: '#fff', cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>🧹</button>
             </div>
           )}
         </div>
@@ -535,14 +555,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       <div style={{ position: 'absolute', bottom: 24, left: 12, zIndex: 10 }}>
         <button onClick={() => { if (userLocation && mapInstance.current) { mapInstance.current.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 17, duration: 800 }); setFollowMode(true); } }} style={{ width: 44, height: 44, borderRadius: 22, border: '1px solid rgba(0,102,204,0.3)', background: 'rgba(13,43,85,0.9)', color: '#3B82F6', fontSize: 18, cursor: 'pointer' }}>◎</button>
       </div>
-
-      {isClockedIn && (
-        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
-          <div style={{ padding: '6px 14px', borderRadius: 20, background: '#10B981', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} /> TRACKING ACTIVE
-          </div>
-        </div>
-      )}
 
       {/* Route modal */}
       {showRouteModal && (
@@ -576,12 +588,12 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </div>
       )}
 
-      {/* Street drawing overlay */}
+      {/* Street drawing active banner */}
       {isStreetDrawing && (
         <>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(37,99,235,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>✏️ Mode traçage actif</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>✏️ Trace GPS active</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>{streetDrawingPoints.length < 2 ? `${streetDrawingPoints.length}/2 points min` : `${streetDrawingPoints.length} points · double-clic pour terminer`}</div>
             </div>
             <button onClick={cancelStreetDrawing} style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Annuler</button>
@@ -592,6 +604,17 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             </div>
           )}
         </>
+      )}
+
+      {/* Eraser mode banner */}
+      {isDrawingErasing && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(245,158,11,0.96)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#000' }}>🧹 Mode gomme actif</div>
+            <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.65)', marginTop: 1 }}>Glisse le doigt sur les tracés pour les effacer</div>
+          </div>
+          <button onClick={exitErasing} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'rgba(0,0,0,0.2)', color: '#000', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>Terminer</button>
+        </div>
       )}
 
       {/* Zone drawing overlay */}
@@ -611,65 +634,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             </button>
           </div>
         </>
-      )}
-
-      {/* Erase mode */}
-      {isErasing && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(245,158,11,0.96)', padding: '10px 16px', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#000' }}>🧹 Mode gomme actif</div>
-            <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.65)', marginTop: 1 }}>Touche la trace pour effacer des points</div>
-          </div>
-          <button onClick={() => { setIsErasing(false); isErasingRef.current = false; }} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'rgba(0,0,0,0.2)', color: '#000', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>Terminer</button>
-        </div>
-      )}
-
-      {/* Trail panel */}
-      {showTrailPanel && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowTrailPanel(false)}>
-          <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: '16px 20px 40px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>Trace GPS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-              {([{ key: 'mine', icon: '🦶', label: 'Ma trace' }, { key: 'team', icon: '👥', label: 'Équipe' }, { key: 'off', icon: '🚫', label: 'Masquer' }] as const).map(({ key, icon, label }) => (
-                <button key={key} onClick={() => setTrailView(key)} style={{ padding: '12px 8px', borderRadius: 10, border: `2px solid ${trailView === key ? '#EF4444' : 'rgba(255,255,255,0.08)'}`, background: trailView === key ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.03)', color: trailView === key ? '#EF4444' : '#9CA3AF', cursor: 'pointer', fontWeight: 600, fontSize: 13, textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{icon}</div><div>{label}</div>
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { const next = !isErasing; setIsErasing(next); isErasingRef.current = next; setShowTrailPanel(false); }} style={{ flex: 1, padding: '13px', borderRadius: 12, border: 'none', background: isErasing ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)', color: isErasing ? '#F59E0B' : '#9CA3AF', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>🧹 Gomme</button>
-              <button onClick={() => clearMyTrail()} style={{ flex: 1, padding: '13px', borderRadius: 12, border: '2px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.06)', color: '#EF4444', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>🗑 Effacer tout</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI Route panel */}
-      {showAIRoute && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowAIRoute(false)}>
-          <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: '16px 20px 40px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>✨ Zone IA recommandée</div>
-            <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 16 }}>Basé sur tes 7 derniers jours</div>
-            {aiSuggestion ? (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-                  {[{ label: 'Portes', value: aiSuggestion.doors, color: '#8B5CF6' }, { label: 'Ventes', value: aiSuggestion.sales, color: '#10B981' }, { label: 'Conversion', value: `${aiSuggestion.convRate}%`, color: '#1A6FD6' }].map(({ label, value, color }) => (
-                    <div key={label} style={{ padding: '10px 8px', borderRadius: 12, background: `${color}18`, border: `1px solid ${color}33`, textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color }}>{value}</div>
-                      <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>{label}</div>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => { if (mapInstance.current) mapInstance.current.flyTo({ center: [aiSuggestion.lng, aiSuggestion.lat], zoom: 16, duration: 1200 }); setShowAIRoute(false); }} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(90deg,#10B981,#059669)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 10 }}>🎯 Aller à cette zone</button>
-              </>
-            ) : (
-              <p style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>Pas encore assez de données. Ajoute au moins 3 pins.</p>
-            )}
-            <button onClick={() => setShowAIRoute(false)} style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', cursor: 'pointer', fontSize: 14 }}>Fermer</button>
-          </div>
-        </div>
       )}
 
       {/* Routes list */}
