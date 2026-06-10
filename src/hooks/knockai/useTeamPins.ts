@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { getSupabaseClient, mapRowToPin } from '@/lib/knockai/supabase';
-import { useKnockAIStore, type PinNotification } from '@/lib/knockai/store';
+import { useKnockAIStore } from '@/lib/knockai/store';
 
 export type RealtimeStatus = 'disabled' | 'connecting' | 'live' | 'error';
 
@@ -28,27 +28,22 @@ export function useTeamPins(teamId: string | undefined, userId: string | undefin
           if (error || !data) return;
           const remotePins = data.map(mapRowToPin);
           const { pins: localPins, trashedPins } = useKnockAIStore.getState();
-          // Never resurrect pins that were already deleted locally
           const trashedIds = new Set(trashedPins.map((p) => p.id));
           const byId = new Map<string, typeof remotePins[0]>(
             remotePins.filter((p) => !trashedIds.has(p.id)).map((p) => [p.id, p])
           );
-          // Preserve local-only pins not yet synced to Supabase
           localPins.forEach((p) => { if (!byId.has(p.id) && !trashedIds.has(p.id)) byId.set(p.id, p as typeof remotePins[0]); });
           useKnockAIStore.setState({ pins: Array.from(byId.values()) });
         });
     };
 
-    // Load ALL team pins from Supabase on mount
     fetchAllPins();
 
-    // Refetch all pins when app comes back to foreground (covers background/closed case)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') fetchAllPins();
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Realtime — every change visible to everyone instantly
     const channel = supabase
       .channel(`knockai-pins-${teamId}`)
       .on(
@@ -59,27 +54,13 @@ export function useTeamPins(teamId: string | undefined, userId: string | undefin
 
           if (payload.eventType === 'INSERT') {
             const newPin = mapRowToPin(payload.new as Record<string, any>);
-            // Skip own insert — already added optimistically in store.addPin
             if (newPin.userId === currentUserId) return;
             useKnockAIStore.setState((state) => ({
               pins: [...state.pins.filter((p) => p.id !== newPin.id), newPin],
             }));
-            // In-app notification
-            const notif: PinNotification = {
-              id: `pinnotif-${Date.now()}-${newPin.id}`,
-              memberName: newPin.placedByName,
-              address: newPin.address || `${newPin.lat.toFixed(4)}, ${newPin.lng.toFixed(4)}`,
-              pinType: newPin.type,
-              timestamp: new Date().toISOString(),
-            };
-            useKnockAIStore.setState((state) => ({
-              pinNotifications: [...state.pinNotifications.slice(-4), notif],
-            }));
-            setTimeout(() => useKnockAIStore.getState().dismissPinNotification(notif.id), 6000);
           }
 
           if (payload.eventType === 'UPDATE') {
-            // Process all updates — including own (handles multi-device scenario)
             const updatedPin = mapRowToPin(payload.new as Record<string, any>);
             useKnockAIStore.setState((state) => ({
               pins: state.pins.map((p) => (p.id === updatedPin.id ? updatedPin : p)),
@@ -87,7 +68,6 @@ export function useTeamPins(teamId: string | undefined, userId: string | undefin
           }
 
           if (payload.eventType === 'DELETE') {
-            // Process all deletes — everyone loses the pin immediately
             const deletedId = String((payload.old as Record<string, any>).id);
             useKnockAIStore.setState((state) => ({
               pins: state.pins.filter((p) => p.id !== deletedId),

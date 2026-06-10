@@ -5,7 +5,7 @@ import { useTeamPins } from '@/hooks/knockai/useTeamPins';
 import { useTeamDrawings } from '@/hooks/knockai/useTeamDrawings';
 import { useLiveLocation } from '@/hooks/knockai/useLiveLocation';
 import { useTeamLocations } from '@/hooks/knockai/useTeamLocations';
-import { useClockInNotifications, type ClockInToast } from '@/hooks/knockai/useClockInNotifications';
+import { useTeamBroadcasts, type TeamToast } from '@/hooks/knockai/useTeamBroadcasts';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -22,10 +22,10 @@ import StatsModal from './modals/StatsModal';
 import DemoTutorialOverlay from './DemoTutorialOverlay';
 
 export default function KnockAIApp() {
-  const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pinNotifications, dismissPinNotification, user, team } = useKnockAIStore();
+  const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, user, team } = useKnockAIStore();
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [clockInToasts, setClockInToasts] = useState<ClockInToast[]>([]);
+  const [teamToasts, setTeamToasts] = useState<TeamToast[]>([]);
 
   // Supabase Realtime — instant pin and drawing sync across team members
   const realtimeStatus = useTeamPins(team?.id, user?.id);
@@ -33,8 +33,8 @@ export default function KnockAIApp() {
   // Live location tracking — sends own GPS while clocked in, shows teammates on map
   useLiveLocation();
   useTeamLocations(team?.id, user?.id);
-  // Clock-in notifications — in-app toast when any teammate clocks in
-  useClockInNotifications(team?.id, user?.id, setClockInToasts);
+  // Centralized team broadcast notifications (clock in/out + sales)
+  useTeamBroadcasts(team?.id, user?.id, setTeamToasts);
 
   useEffect(() => {
     setMounted(true);
@@ -106,34 +106,35 @@ export default function KnockAIApp() {
     );
   }
 
-  const PIN_TYPE_DISPLAY: Record<string, { icon: string; label: string; color: string }> = {
-    sale: { icon: '✓', label: 'Vente', color: '#34D399' },
-    not_interested: { icon: '✕', label: 'Non', color: '#EF4444' },
-    call_back: { icon: '?', label: 'Rappel', color: '#F59E0B' },
-    ai_knocked: { icon: 'AI', label: 'IA', color: '#3B82F6' },
+  const TOAST_CONFIG: Record<TeamToast['type'], { borderColor: string; label: (name: string, address?: string) => string; sub: string }> = {
+    clock_in:  { borderColor: '#00BFFF', label: (n) => `${n} clocked in 🟢`,    sub: 'Now active on the map' },
+    clock_out: { borderColor: '#6B7280', label: (n) => `${n} clocked out 🔴`,   sub: 'No longer visible on map' },
+    sale:      { borderColor: '#22c55e', label: (n) => `💰 ${n} just made a sale!`, sub: 'New sale recorded' },
   };
 
   const overlays = (
     <>
-      {/* Clock-in toasts — appear when any teammate clocks in */}
-      {clockInToasts.length > 0 && (
-        <div style={{ position: 'fixed', top: isOnline ? 12 : 44, left: 12, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300 }}>
-          {clockInToasts.map((toast) => {
-            const initials = toast.userName.split(' ').map((w) => w[0] || '').join('').substring(0, 2).toUpperCase();
+      {/* Unified team broadcast toasts (clock in/out + sales) */}
+      {teamToasts.length > 0 && (
+        <div style={{ position: 'fixed', top: isOnline ? 12 : 44, right: 12, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300 }}>
+          {teamToasts.slice(0, 4).map((t) => {
+            const cfg = TOAST_CONFIG[t.type];
+            const initials = t.userName.split(' ').map((w) => w[0] || '').join('').substring(0, 2).toUpperCase();
+            const subText = (t.type === 'sale' && t.address) ? `At ${t.address}` : cfg.sub;
             return (
-              <div key={toast.id} style={{ background: '#0D2B55', border: '1px solid rgba(0,191,255,0.3)', borderLeft: '3px solid #00BFFF', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,191,255,0.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #00BFFF', overflow: 'hidden', flexShrink: 0, background: '#1A2E4A', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 8px rgba(0,191,255,0.5)' }}>
-                  {toast.profilePhotoUrl ? (
-                    <img src={toast.profilePhotoUrl} alt={toast.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div key={t.id} style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderLeft: `4px solid ${cfg.borderColor}`, borderRadius: 8, padding: '12px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${cfg.borderColor}`, overflow: 'hidden', flexShrink: 0, background: '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {t.profilePhotoUrl ? (
+                    <img src={t.profilePhotoUrl} alt={t.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <span style={{ color: '#00BFFF', fontWeight: 800, fontSize: 11 }}>{initials}</span>
+                    <span style={{ color: cfg.borderColor, fontWeight: 800, fontSize: 11 }}>{initials}</span>
                   )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{toast.userName} just clocked in 🟢</div>
-                  <div style={{ fontSize: 10, color: '#00BFFF', marginTop: 2 }}>Now active on map</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cfg.label(t.userName, t.address)}</div>
+                  <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>{subText}</div>
                 </div>
-                <button onClick={() => setClockInToasts((p) => p.filter((t) => t.id !== toast.id))} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>✕</button>
+                <button onClick={() => setTeamToasts((p) => p.filter((x) => x.id !== t.id))} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>✕</button>
               </div>
             );
           })}
@@ -143,37 +144,6 @@ export default function KnockAIApp() {
       {!isOnline && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999, background: '#374151', color: '#fff', textAlign: 'center', padding: '8px 16px', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <span>📵</span> Mode hors-ligne — les données sont sauvegardées localement
-        </div>
-      )}
-      {saleNotifications.length > 0 && (
-        <div style={{ position: 'fixed', top: isOnline ? 12 : 44, right: 12, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
-          {saleNotifications.slice(0, 3).map((n) => (
-            <div key={n.id} style={{ background: 'linear-gradient(135deg, #064E3B, #065F46)', border: '1px solid #10B981', borderRadius: 14, padding: '12px 16px', boxShadow: '0 8px 24px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontSize: 28 }}>🎉</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{n.memberName} a fait une vente !</div>
-                <div style={{ fontSize: 11, color: '#6EE7B7', marginTop: 2 }}>Il y a quelques secondes</div>
-              </div>
-              <button onClick={() => dismissSaleNotification(n.id)} style={{ background: 'none', border: 'none', color: '#6EE7B7', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
-            </div>
-          ))}
-        </div>
-      )}
-      {pinNotifications.length > 0 && (
-        <div style={{ position: 'fixed', bottom: 88, right: 12, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300 }}>
-          {pinNotifications.slice(0, 3).map((n) => {
-            const pt = PIN_TYPE_DISPLAY[n.pinType] || { icon: '📍', label: n.pinType, color: '#9CA3AF' };
-            return (
-              <div key={n.id} style={{ background: 'linear-gradient(135deg, #1E1B4B, #1E2A4A)', border: `1px solid ${pt.color}55`, borderLeft: `3px solid ${pt.color}`, borderRadius: 12, padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: pt.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: n.pinType === 'ai_knocked' ? 8 : 13, flexShrink: 0 }}>{pt.icon}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.memberName} a ajouté un pin</div>
-                  <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pt.label} · {n.address}</div>
-                </div>
-                <button onClick={() => dismissPinNotification(n.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>✕</button>
-              </div>
-            );
-          })}
         </div>
       )}
     </>

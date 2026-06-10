@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getSupabaseClient } from '@/lib/knockai/supabase';
 
 async function syncToRedis(email: string, userData: object, teamId?: string, teamData?: object) {
   try {
@@ -93,22 +94,6 @@ export interface LiveLocation {
   isActive: boolean;
   clockedInAt: string;
   updatedAt: string;
-}
-
-export interface SaleNotification {
-  id: string;
-  memberName: string;
-  lat: number;
-  lng: number;
-  timestamp: string;
-}
-
-export interface PinNotification {
-  id: string;
-  memberName: string;
-  address: string;
-  pinType: PinType;
-  timestamp: string;
 }
 
 export interface TeamDate {
@@ -215,8 +200,6 @@ interface KnockAIState {
 
   isOnline: boolean;
   dailyGoals: { doors: number; sales: number };
-  saleNotifications: SaleNotification[];
-  pinNotifications: PinNotification[];
   trailPoints: TrailPoint[];
   trailView: 'mine' | 'team' | 'off';
   teamDrawings: TeamDrawing[];
@@ -274,8 +257,6 @@ interface KnockAIState {
   loadTeamDrawings: () => Promise<void>;
   setOnline: (online: boolean) => void;
   setDailyGoals: (goals: { doors: number; sales: number }) => void;
-  dismissSaleNotification: (id: string) => void;
-  dismissPinNotification: (id: string) => void;
   pollTeamPins: () => Promise<void>;
   updateMyTeamStats: () => void;
   setNotifications: (notifs: Partial<KnockAIState['notifications']>) => void;
@@ -308,10 +289,6 @@ const DEMO_MEMBERS: TeamMember[] = [
   { id: 'user-3', fullName: 'Marcus Williams', email: 'marcus@knockai.com', role: 'member', isOnline: false, lat: 37.773, lng: -122.416 },
   { id: 'user-4', fullName: 'Emily Rodriguez', email: 'emily@knockai.com', role: 'member', isOnline: true, lat: 37.777, lng: -122.420 },
 ];
-
-// Runtime-only: tracks which teammate pin IDs have already triggered a notification
-const seenTeammatePinIds = new Set<string>();
-let seenTeammatePinIdsInitialized = false;
 
 export const useKnockAIStore = create<KnockAIState>()(
   persist(
@@ -346,8 +323,6 @@ export const useKnockAIStore = create<KnockAIState>()(
       mapTheme: 'light',
       isOnline: true,
       dailyGoals: { doors: 20, sales: 3 },
-      saleNotifications: [],
-      pinNotifications: [],
       trailPoints: [],
       trailView: 'mine',
       teamDrawings: [],
@@ -496,6 +471,18 @@ export const useKnockAIStore = create<KnockAIState>()(
         // Supabase realtime broadcast (fire and forget)
         if (pin.teamId) {
           fetch('/api/knockai/pins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) }).catch(() => {});
+        }
+        // Broadcast sale to teammates via Supabase channel
+        if (pin.type === 'sale' && s.team?.id && s.user?.id) {
+          const supabase = getSupabaseClient();
+          if (supabase) {
+            const ch = supabase.channel(`team:${s.team.id}`);
+            ch.subscribe((status) => {
+              if (status !== 'SUBSCRIBED') return;
+              ch.send({ type: 'broadcast', event: 'sale_made', payload: { userId: s.user!.id, userName: s.user!.fullName || '', profilePhotoUrl: s.user!.profilePhotoUrl, address: pin.address || null } }).catch(() => {});
+              setTimeout(() => supabase.removeChannel(ch), 2000);
+            });
+          }
         }
       },
 
@@ -853,8 +840,6 @@ export const useKnockAIStore = create<KnockAIState>()(
 
       setOnline: (online) => set({ isOnline: online }),
       setDailyGoals: (goals) => set({ dailyGoals: goals }),
-      dismissSaleNotification: (id) => set((state) => ({ saleNotifications: state.saleNotifications.filter((n) => n.id !== id) })),
-      dismissPinNotification: (id) => set((state) => ({ pinNotifications: state.pinNotifications.filter((n) => n.id !== id) })),
 
       pollTeamPins: async () => {
         const { team, user } = get();
@@ -866,23 +851,6 @@ export const useKnockAIStore = create<KnockAIState>()(
           if (json.skipped || !json.pins) return;
           const remotePins: Pin[] = json.pins;
           const myId = user?.id;
-          if (!seenTeammatePinIdsInitialized) {
-            get().pins.filter((p) => p.userId !== myId).forEach((p) => seenTeammatePinIds.add(p.id));
-            seenTeammatePinIdsInitialized = true;
-          }
-          const newPins = remotePins.filter((p) => p.userId !== myId && !seenTeammatePinIds.has(p.id));
-          newPins.forEach((p) => {
-            seenTeammatePinIds.add(p.id);
-            const notif: PinNotification = {
-              id: `pinnotif-${Date.now()}-${p.id}`,
-              memberName: p.placedByName,
-              address: p.address || `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`,
-              pinType: p.type,
-              timestamp: new Date().toISOString(),
-            };
-            set((state) => ({ pinNotifications: [...state.pinNotifications.slice(-4), notif] }));
-            setTimeout(() => get().dismissPinNotification(notif.id), 6000);
-          });
           set((state) => ({
             pins: [
               ...state.pins.filter((p) => p.userId === myId),
@@ -912,25 +880,6 @@ export const useKnockAIStore = create<KnockAIState>()(
         if (!team?.id) return;
         const data = await pollTeamFromRedis(team.id);
         if (!data) return;
-        if (data.teamMembers) {
-          data.teamMembers.forEach((newM: TeamMember) => {
-            if (newM.id === user?.id) return;
-            const prev = prevMembers.find((m) => m.id === newM.id);
-            if (prev && (newM.salesToday || 0) > (prev.salesToday || 0)) {
-              const notif: SaleNotification = {
-                id: `notif-${Date.now()}-${newM.id}`,
-                memberName: newM.fullName,
-                lat: newM.lat || 0,
-                lng: newM.lng || 0,
-                timestamp: new Date().toISOString(),
-              };
-              set((state) => ({ saleNotifications: [...state.saleNotifications, notif] }));
-              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                new Notification(`🎉 ${newM.fullName} a fait une vente!`, { body: 'Nouvelle vente enregistrée', icon: '/icon.png' });
-              }
-            }
-          });
-        }
         const myId = user?.id;
         set((state) => ({
           ...(data.teamMembers && data.teamMembers.length > 0 && { teamMembers: data.teamMembers }),

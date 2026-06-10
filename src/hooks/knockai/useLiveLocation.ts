@@ -30,19 +30,13 @@ function dispatchLocation(payload: { userId: string; teamId: string; lat: number
   });
 }
 
-// Broadcasts clock-in event so teammates' in-app toasts fire instantly.
-function broadcastClockIn(teamId: string, userId: string, userName: string, profilePhotoUrl?: string) {
+function broadcastTeamEvent(teamId: string, event: string, payload: object) {
   const supabase = getSupabaseClient();
   if (!supabase) return;
-  const ch = supabase.channel(`team-clockin-${teamId}`);
+  const ch = supabase.channel(`team:${teamId}`);
   ch.subscribe((status) => {
     if (status !== 'SUBSCRIBED') return;
-    ch.send({
-      type: 'broadcast',
-      event: 'clock_in',
-      payload: { userId, userName, profilePhotoUrl },
-    }).catch(() => {});
-    // Tear down this one-shot broadcast channel after 2 seconds
+    ch.send({ type: 'broadcast', event, payload }).catch(() => {});
     setTimeout(() => supabase.removeChannel(ch), 2000);
   });
 }
@@ -70,7 +64,7 @@ export function useLiveLocation() {
 
   useEffect(() => {
     if (!isClockedIn) {
-      // Deactivate on clock-out
+      // Deactivate on clock-out + broadcast to teammates
       const { user, team } = useKnockAIStore.getState();
       if (user?.id && team?.id) {
         fetch('/api/knockai/live-location', {
@@ -78,16 +72,17 @@ export function useLiveLocation() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, teamId: team.id }),
         }).catch(() => {});
+        broadcastTeamEvent(team.id, 'clock_out', { userId: user.id, userName: user.fullName || user.email || '', profilePhotoUrl: user.profilePhotoUrl });
       }
       return;
     }
 
     if (!navigator.geolocation) return;
 
-    // Broadcast clock-in to all online teammates
+    // Broadcast clock-in to all teammates
     const { user, team } = useKnockAIStore.getState();
     if (user?.id && team?.id) {
-      broadcastClockIn(team.id, user.id, user.fullName || user.email || '', user.profilePhotoUrl);
+      broadcastTeamEvent(team.id, 'clock_in', { userId: user.id, userName: user.fullName || user.email || '', profilePhotoUrl: user.profilePhotoUrl });
     }
 
     // Immediate first fix
