@@ -216,8 +216,8 @@ export default function SettingsScreen() {
 
       {/* Version */}
       <div style={{ textAlign: 'center', padding: '20px 16px 8px', color: '#374151' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>KnockAI v1.3</div>
-        <div style={{ fontSize: 11, marginTop: 3 }}>Dernière mise à jour : 10 avril 2026</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>KnockAI v1.6</div>
+        <div style={{ fontSize: 11, marginTop: 3 }}>Dernière mise à jour : 30 mai 2026</div>
       </div>
 
       {/* Modals */}
@@ -1157,7 +1157,7 @@ function downloadExcel(rows: (string | number)[][], sheetName: string, filename:
 }
 
 const PRIVACY_TEXT = `KnockAI — Privacy Policy
-Version 1.2 | Last updated: April 8, 2026
+Version 1.4 | Last updated: May 30, 2026
 
 KnockAI is a door-to-door sales management platform. We take your privacy seriously. This policy explains what data we collect, how we use it, and your rights.
 
@@ -1196,7 +1196,7 @@ We will notify users of material changes via in-app notification. Continued use 
 For privacy questions: privacy@knockai.com`;
 
 const TERMS_TEXT = `KnockAI — Terms of Service
-Version 1.2 | Last updated: April 8, 2026
+Version 1.4 | Last updated: May 30, 2026
 
 Please read these Terms of Service carefully before using KnockAI. By accessing or using the app, you agree to be bound by these terms.
 

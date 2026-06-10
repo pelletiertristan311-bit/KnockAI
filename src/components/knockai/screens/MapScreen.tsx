@@ -25,6 +25,26 @@ const DRAW_COLORS = ['#EF4444', '#1F2937', '#3B82F6'];
 const TEAMMATE_DRAWING_COLOR = '#FF3B30';
 
 function addMapLayers(map: any) {
+  // Civic house numbers via Overpass — rendered as WebGL symbol layer below HTML pins
+  map.addSource('civic-numbers', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'civic-numbers-labels',
+    type: 'symbol',
+    source: 'civic-numbers',
+    minzoom: 16,
+    layout: {
+      'text-field': ['get', 'n'],
+      'text-size': 10,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
+    },
+    paint: {
+      'text-color': '#333333',
+      'text-halo-color': 'rgba(255,255,255,0.85)',
+      'text-halo-width': 1.5,
+    },
+  });
   map.addSource('routes-data', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   map.addLayer({ id: 'routes-fill', type: 'fill', source: 'routes-data', paint: { 'fill-color': '#8B5CF6', 'fill-opacity': 0.18 } });
   map.addLayer({ id: 'routes-outline', type: 'line', source: 'routes-data', paint: { 'line-color': '#8B5CF6', 'line-width': 2.5, 'line-opacity': 0.9 } });
@@ -46,6 +66,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const markersRef = useRef<any[]>([]);
   const routeMarkersRef = useRef<any[]>([]);
   const userMarkerRef = useRef<any>(null);
+  const userArrowRef = useRef<SVGSVGElement | null>(null);
   const teammateMarkersRef = useRef<any[]>([]);
   const isStreetDrawingRef = useRef(false);
   const streetDrawingPointsRef = useRef<[number, number][]>([]);
@@ -56,6 +77,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const drawDotMarkersRef = useRef<any[]>([]);
   const isDrawingErasingRef = useRef(false);
   const drawingsRef = useRef<TeamDrawing[]>([]);
+  const signMarkersRef = useRef<any[]>([]);
+  const isSignsModeRef = useRef(false);
 
   const [followMode, setFollowMode] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,8 +103,23 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [streetDrawingPoints, setStreetDrawingPoints] = useState<[number, number][]>([]);
   const [drawingColor, setDrawingColor] = useState('#EF4444');
 
+  const [isSignsMode, setIsSignsMode] = useState(false);
+  const [signs, setSigns] = useState<{ id: string; lat: number; lng: number; label: string; createdAt: string }[]>([]);
+  const [signPendingCoords, setSignPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [signLabelInput, setSignLabelInput] = useState('');
+  const [selectedSign, setSelectedSign] = useState<{ id: string; lat: number; lng: number; label: string; createdAt: string } | null>(null);
+  const [showSignsList, setShowSignsList] = useState(false);
+
   drawingColorRef.current = drawingColor;
   isDrawingErasingRef.current = isDrawingErasing;
+  isSignsModeRef.current = isSignsMode;
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('knockai_signs');
+      if (stored) setSigns(JSON.parse(stored));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -119,7 +157,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       if (!document.getElementById('maplibre-css')) {
         const link = document.createElement('link');
         link.id = 'maplibre-css'; link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css';
+        link.href = 'https://unpkg.com/maplibre-gl@5.22.0/dist/maplibre-gl.css';
         document.head.appendChild(link);
       }
       const { userLocation: initLoc, mapTheme: initTheme } = useKnockAIStore.getState();
@@ -136,6 +174,15 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           addMapLayers(map);
           setMapLoaded(true);
           setMapStyleVersion((v) => v + 1);
+          // Scale pin markers with zoom so they stay visually small
+          const applyPinScale = () => {
+            const z = map.getZoom();
+            const s = Math.max(0.25, Math.min(1, Math.pow(z / 17, 2)));
+            document.querySelectorAll<HTMLElement>('.pin-scale-group').forEach((el) => {
+              el.style.transform = `scale(${s})`;
+            });
+          };
+          map.on('zoom', applyPinScale);
           map.on('click', (e: any) => {
             if (isStreetDrawingRef.current) {
               if ((e.originalEvent as MouseEvent).detail > 1) return;
@@ -150,6 +197,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               const next = [...drawingPointsRef.current, pt];
               drawingPointsRef.current = next;
               setDrawingPoints([...next]);
+            } else if (isSignsModeRef.current) {
+              setSignPendingCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
             } else {
               setQuickPinCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
             }
@@ -189,35 +238,120 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
     const myId = user?.id;
+    const currentZoom = mapInstance.current.getZoom();
+    const initialScale = Math.max(0.25, Math.min(1, Math.pow(currentZoom / 17, 2)));
     filteredPins.forEach((pin) => {
       const isOwn = pin.userId === myId;
+      // wrapper: MapLibre positions this — never touch its transform
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'position:relative;width:40px;height:40px;cursor:pointer;overflow:visible;';
+      wrapper.style.cssText = 'position:absolute;width:40px;height:40px;cursor:pointer;overflow:visible;';
+      // scaleGroup: scales visually with zoom without affecting MapLibre positioning
+      const scaleGroup = document.createElement('div');
+      scaleGroup.className = 'pin-scale-group';
+      scaleGroup.style.cssText = `position:absolute;top:0;left:0;width:40px;height:40px;transform-origin:center center;transform:scale(${initialScale});`;
       const inner = document.createElement('div');
+      // Own pins: white border / others: subtle purple border
       inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${pin.type === 'ai_knocked' ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
       inner.textContent = PIN_ICONS[pin.type];
-      wrapper.appendChild(inner);
+      scaleGroup.appendChild(inner);
       const civicNumber = pin.address?.match(/^\d+/)?.[0];
       if (civicNumber) {
         const lbl = document.createElement('div');
         lbl.style.cssText = 'position:absolute;top:43px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.62);color:#fff;font-size:10px;font-weight:700;font-family:Inter,sans-serif;padding:2px 5px;border-radius:4px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,0.18);line-height:1.3;';
         lbl.textContent = civicNumber;
-        wrapper.appendChild(lbl);
+        scaleGroup.appendChild(lbl);
       }
-      if (!isOwn) {
-        const badge = document.createElement('div');
-        const initials = pin.placedByName.split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
-        badge.style.cssText = 'position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:#8B5CF6;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;font-size:7px;font-weight:700;font-family:Inter,sans-serif;line-height:1;';
-        badge.textContent = initials;
-        wrapper.appendChild(badge);
-      }
+      // Badge on ALL pins — everyone sees who placed it
+      const badge = document.createElement('div');
+      const initials = (pin.placedByName || '?').split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+      badge.style.cssText = `position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:${isOwn ? '#374151' : '#8B5CF6'};border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;font-size:7px;font-weight:700;font-family:Inter,sans-serif;line-height:1;`;
+      badge.textContent = initials;
+      scaleGroup.appendChild(badge);
+      wrapper.appendChild(scaleGroup);
       wrapper.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.2)'; });
       wrapper.addEventListener('mouseleave', () => { inner.style.transform = 'scale(1)'; });
       wrapper.addEventListener('click', (e) => { e.stopPropagation(); openEditPinModal(pin); });
-      const m = new ml.Marker({ element: wrapper }).setLngLat([pin.lng, pin.lat]).addTo(mapInstance.current!);
+      const m = new ml.Marker({ element: wrapper, anchor: 'center' }).setLngLat([pin.lng, pin.lat]).addTo(mapInstance.current!);
       markersRef.current.push(m);
     });
   }, [filteredPins, mapLoaded, user?.id]);
+
+  // Sign markers — neon blinking placards
+  useEffect(() => {
+    if (!mapInstance.current || !mapLoaded || !maplibreRef.current) return;
+    const ml = maplibreRef.current;
+    signMarkersRef.current.forEach((m) => m.remove());
+    signMarkersRef.current = [];
+    signs.forEach((sign) => {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;';
+      const board = document.createElement('div');
+      board.style.cssText = 'width:32px;height:22px;background:#0a1628;border:2px solid #00BFFF;border-radius:4px;display:flex;align-items:center;justify-content:center;animation:neonBlink 1.5s ease-in-out infinite;box-shadow:0 0 8px rgba(0,191,255,0.35);';
+      const icon = document.createElement('span');
+      icon.style.cssText = 'font-size:13px;line-height:1;';
+      icon.textContent = '🪧';
+      board.appendChild(icon);
+      const post = document.createElement('div');
+      post.style.cssText = 'width:2px;height:14px;background:#00BFFF;box-shadow:0 0 4px #00BFFF;';
+      wrapper.appendChild(board);
+      wrapper.appendChild(post);
+      wrapper.addEventListener('click', (e) => { e.stopPropagation(); setSelectedSign(sign); });
+      const m = new ml.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat([sign.lng, sign.lat]).addTo(mapInstance.current!);
+      signMarkersRef.current.push(m);
+    });
+  }, [signs, mapLoaded]);
+
+  // Civic house numbers from OpenStreetMap via Overpass API
+  useEffect(() => {
+    if (!mapInstance.current || mapStyleVersion === 0) return;
+    const map = mapInstance.current;
+    let abortCtrl: AbortController | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const load = async () => {
+      const src = map.getSource('civic-numbers');
+      if (!src) return;
+      const zoom = map.getZoom();
+      if (zoom < 16) { src.setData({ type: 'FeatureCollection', features: [] }); return; }
+
+      const b = map.getBounds();
+      const bbox = `${b.getSouth().toFixed(6)},${b.getWest().toFixed(6)},${b.getNorth().toFixed(6)},${b.getEast().toFixed(6)}`;
+      const q = `[out:json][timeout:8];(way["addr:housenumber"](${bbox});node["addr:housenumber"](${bbox}););out center;`;
+
+      if (abortCtrl) abortCtrl.abort();
+      abortCtrl = new AbortController();
+      try {
+        const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`, { signal: abortCtrl.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.elements || data.elements.length > 500) { src.setData({ type: 'FeatureCollection', features: [] }); return; }
+        const features = (data.elements as any[])
+          .map((el) => {
+            const num = el.tags?.['addr:housenumber'];
+            if (!num) return null;
+            const lat = el.type === 'node' ? el.lat : el.center?.lat;
+            const lon = el.type === 'node' ? el.lon : el.center?.lon;
+            if (!lat || !lon) return null;
+            return { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [lon, lat] }, properties: { n: num } };
+          })
+          .filter(Boolean);
+        if (!abortCtrl.signal.aborted) src.setData({ type: 'FeatureCollection', features });
+      } catch { /* abort or network error — silent */ }
+    };
+
+    const debounced = () => { if (timer) clearTimeout(timer); timer = setTimeout(load, 600); };
+
+    map.on('moveend', debounced);
+    map.on('zoomend', debounced);
+    debounced();
+
+    return () => {
+      map.off('moveend', debounced);
+      map.off('zoomend', debounced);
+      if (timer) clearTimeout(timer);
+      if (abortCtrl) abortCtrl.abort();
+    };
+  }, [mapStyleVersion]);
 
   // Route polygons
   useEffect(() => {
@@ -301,7 +435,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const el = document.createElement('div');
       el.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#8B5CF6;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 0 12px rgba(139,92,246,0.6);';
       el.textContent = member.fullName.charAt(0);
-      const tm = new ml.Marker({ element: el }).setLngLat([member.lng!, member.lat!]).addTo(mapInstance.current!);
+      const tm = new ml.Marker({ element: el, anchor: 'center' }).setLngLat([member.lng!, member.lat!]).addTo(mapInstance.current!);
       teammateMarkersRef.current.push(tm);
     });
   }, [teamMembers, mapLoaded]);
@@ -317,17 +451,106 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     return () => navigator.geolocation.clearWatch(id);
   }, []);
 
-  // User location marker
+  // Create user arrow marker once when map loads
   useEffect(() => {
-    if (!mapInstance.current || !mapLoaded || !userLocation || !maplibreRef.current) return;
+    if (!mapLoaded || !maplibreRef.current || !mapInstance.current) return;
+    if (userMarkerRef.current) { userMarkerRef.current.remove(); userMarkerRef.current = null; }
     const ml = maplibreRef.current;
-    if (userMarkerRef.current) userMarkerRef.current.remove();
+    const initLoc = useKnockAIStore.getState().userLocation;
+    const lngLat: [number, number] = initLoc ? [initLoc.lng, initLoc.lat] : [-73.5673, 45.5017];
+
     const el = document.createElement('div');
-    el.style.cssText = 'position:relative;width:36px;height:36px;';
-    el.innerHTML = `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,102,204,0.2);animation:pulseUser 2s ease-in-out infinite;"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid white;box-shadow:0 2px 8px rgba(0,102,204,0.5);"></div>`;
-    userMarkerRef.current = new ml.Marker({ element: el }).setLngLat([userLocation.lng, userLocation.lat]).addTo(mapInstance.current!);
-    if (followMode) mapInstance.current!.flyTo({ center: [userLocation.lng, userLocation.lat], duration: 800 });
-  }, [userLocation, mapLoaded, followMode]);
+    el.style.cssText = 'position:absolute;width:40px;height:40px;';
+
+    // Pulsing accuracy ring (doesn't rotate)
+    const ring = document.createElement('div');
+    ring.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(21,101,192,0.15);animation:pulseUser 2s ease-in-out infinite;pointer-events:none;';
+    el.appendChild(ring);
+
+    // Arrow SVG — points UP = north, rotates for heading
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg') as unknown as SVGSVGElement;
+    svg.setAttribute('width', '40'); svg.setAttribute('height', '40'); svg.setAttribute('viewBox', '0 0 40 40');
+    svg.style.cssText = 'position:absolute;top:0;left:0;transform-origin:20px 20px;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3));';
+
+    const shadow = document.createElementNS(ns, 'ellipse');
+    shadow.setAttribute('cx', '20'); shadow.setAttribute('cy', '36'); shadow.setAttribute('rx', '5'); shadow.setAttribute('ry', '2');
+    shadow.setAttribute('fill', 'rgba(0,0,0,0.18)');
+    svg.appendChild(shadow);
+
+    const left = document.createElementNS(ns, 'path');
+    left.setAttribute('d', 'M20 4 L7 33 L20 27 Z');
+    left.setAttribute('fill', '#1565C0');
+    svg.appendChild(left);
+
+    const right = document.createElementNS(ns, 'path');
+    right.setAttribute('d', 'M20 4 L33 33 L20 27 Z');
+    right.setAttribute('fill', '#42A5F5');
+    svg.appendChild(right);
+
+    el.appendChild(svg);
+    userArrowRef.current = svg;
+
+    userMarkerRef.current = new ml.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(mapInstance.current!);
+  }, [mapLoaded]);
+
+  // Update arrow position silently on each GPS fix (no marker recreate)
+  useEffect(() => {
+    if (!userLocation) return;
+    if (userMarkerRef.current) userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+    if (followMode && mapInstance.current) mapInstance.current.flyTo({ center: [userLocation.lng, userLocation.lat], duration: 800 });
+  }, [userLocation, followMode]);
+
+  // Device orientation — rotate the arrow to show where phone points
+  useEffect(() => {
+    let hasAbsolute = false;
+    let active = true;
+
+    const applyHeading = (heading: number) => {
+      if (userArrowRef.current) userArrowRef.current.style.transform = `rotate(${heading}deg)`;
+    };
+
+    const onAbsolute = (e: DeviceOrientationEvent) => {
+      hasAbsolute = true;
+      const h = (e as any).webkitCompassHeading ?? ((360 - ((e as any).alpha || 0)) % 360);
+      applyHeading(h);
+    };
+    const onRelative = (e: DeviceOrientationEvent) => {
+      if (hasAbsolute) return;
+      const h = (e as any).webkitCompassHeading ?? ((360 - ((e as any).alpha || 0)) % 360);
+      applyHeading(h);
+    };
+
+    const startListening = () => {
+      if (!active) return;
+      window.addEventListener('deviceorientationabsolute', onAbsolute as any, true);
+      window.addEventListener('deviceorientation', onRelative as any, true);
+    };
+
+    const setup = async () => {
+      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+        // iOS 13+ requires user gesture
+        try {
+          const perm = await (DeviceOrientationEvent as any).requestPermission();
+          if (perm === 'granted') { startListening(); return; }
+        } catch {}
+        // Failed (no gesture yet) — retry on first map tap
+        const retry = async () => {
+          try { if ((await (DeviceOrientationEvent as any).requestPermission()) === 'granted') startListening(); } catch {}
+        };
+        mapRef.current?.addEventListener('click', retry, { once: true });
+      } else {
+        startListening();
+      }
+    };
+
+    setup();
+    return () => {
+      active = false;
+      window.removeEventListener('deviceorientationabsolute', onAbsolute as any, true);
+      window.removeEventListener('deviceorientation', onRelative as any, true);
+    };
+  }, []);
 
   // Disable map interaction when eraser is active
   useEffect(() => {
@@ -421,6 +644,34 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     const dotsSrc = mapInstance.current?.getSource('street-drawing-dots');
     if (activeSrc) activeSrc.setData({ type: 'FeatureCollection', features: [] });
     if (dotsSrc) dotsSrc.setData({ type: 'FeatureCollection', features: [] });
+  };
+
+  const handleSignsToggle = () => {
+    if (!isManagerOrOwner) return;
+    if (isSignsMode) {
+      setIsSignsMode(false);
+    } else {
+      if (isStreetDrawing) cancelStreetDrawing();
+      if (isDrawingErasing) exitErasing();
+      setIsSignsMode(true);
+    }
+  };
+
+  const saveSignMarker = (coords: { lat: number; lng: number }, label: string) => {
+    const sign = { id: `sign-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, lat: coords.lat, lng: coords.lng, label, createdAt: new Date().toISOString() };
+    setSigns((prev) => {
+      const next = [...prev, sign];
+      localStorage.setItem('knockai_signs', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const deleteSignById = (id: string) => {
+    setSigns((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      localStorage.setItem('knockai_signs', JSON.stringify(next));
+      return next;
+    });
   };
 
   const flyToPin = (pin: Pin) => { mapInstance.current?.flyTo({ center: [pin.lng, pin.lat], zoom: 17, duration: 800 }); setShowSearch(false); setSearchQuery(''); };
@@ -541,6 +792,25 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             </div>
           )}
         </div>
+
+        {/* Signs mode button — managers/owners only can place; everyone sees the list */}
+        <div style={{ position: 'relative' }}>
+          <button onClick={isManagerOrOwner ? handleSignsToggle : undefined} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isSignsMode ? 'rgba(0,191,255,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isSignsMode ? 'rgba(0,191,255,0.18)' : 'rgba(13,43,85,0.9)', color: isSignsMode ? '#00BFFF' : isManagerOrOwner ? '#fff' : '#4B5563', cursor: isManagerOrOwner ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', boxShadow: isSignsMode ? '0 0 10px rgba(0,191,255,0.3)' : 'none', opacity: isManagerOrOwner ? 1 : 0.55 }}>
+            <span style={{ fontSize: 14 }}>🪧</span>
+            <span style={{ fontSize: 7, fontWeight: 700 }}>{isManagerOrOwner ? 'Signs' : '🔒'}</span>
+          </button>
+          {isSignsMode && (
+            <div style={{ position: 'absolute', right: 48, top: 0, padding: '8px 12px', borderRadius: 12, background: 'rgba(13,43,85,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,191,255,0.35)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#00BFFF' }}>Tap map to drop a sign</div>
+            </div>
+          )}
+        </div>
+
+        {/* Signs list button — visible to everyone */}
+        <button onClick={() => setShowSignsList(!showSignsList)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${showSignsList ? 'rgba(0,191,255,0.5)' : 'rgba(0,102,204,0.2)'}`, background: showSignsList ? 'rgba(0,191,255,0.15)' : 'rgba(13,43,85,0.9)', color: showSignsList ? '#00BFFF' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', fontSize: 16 }}>
+          <span style={{ fontSize: 14 }}>🚏</span>
+          <span style={{ fontSize: 7, fontWeight: 700 }}>List</span>
+        </button>
       </div>
 
       {/* AI toggle */}
@@ -604,6 +874,17 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             </div>
           )}
         </>
+      )}
+
+      {/* Signs mode banner */}
+      {isSignsMode && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(0,148,200,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>🪧 Signs mode — tap to drop</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>Tap anywhere on the map to place a sign marker</div>
+          </div>
+          <button onClick={() => setIsSignsMode(false)} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>Done</button>
+        </div>
       )}
 
       {/* Eraser mode banner */}
@@ -675,6 +956,102 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </div>
       )}
 
+      {/* Add Sign modal */}
+      {signPendingCoords && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }}>
+          <div style={{ width: '100%', maxWidth: 340, background: '#0D2B55', borderRadius: 20, padding: '24px 20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 22 }}>🪧</span>
+                <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#00BFFF' }}>New Sign</h2>
+              </div>
+              <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', color: '#9CA3AF', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Label or note (optional)</label>
+              <input
+                autoFocus
+                value={signLabelInput}
+                onChange={(e) => setSignLabelInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { saveSignMarker(signPendingCoords, signLabelInput.trim()); setSignPendingCoords(null); setSignLabelInput(''); } }}
+                placeholder="e.g. No Soliciting street, HOA block..."
+                style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(0,191,255,0.3)', background: 'rgba(0,191,255,0.05)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            {isManagerOrOwner ? (
+              <button
+                onClick={() => { saveSignMarker(signPendingCoords, signLabelInput.trim()); setSignPendingCoords(null); setSignLabelInput(''); }}
+                style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #0094C8, #00BFFF)', color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 8, boxShadow: '0 4px 14px rgba(0,191,255,0.35)' }}
+              >
+                Save Sign
+              </button>
+            ) : (
+              <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', color: '#4B5563', fontSize: 14, textAlign: 'center', marginBottom: 8 }}>🔒 Only managers and owners can place signs</div>
+            )}
+            <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.07)', color: '#9CA3AF', fontSize: 14 }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Sign popup */}
+      {selectedSign && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={() => setSelectedSign(null)}>
+          <div style={{ width: '100%', maxWidth: 320, background: '#0D2B55', borderRadius: 20, padding: '22px 20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <span style={{ fontSize: 28 }}>🪧</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#00BFFF' }}>{selectedSign.label || 'Sign'}</div>
+                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{new Date(selectedSign.createdAt).toLocaleDateString()} · {selectedSign.lat.toFixed(5)}, {selectedSign.lng.toFixed(5)}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => { mapInstance.current?.flyTo({ center: [selectedSign.lng, selectedSign.lat], zoom: 17, duration: 800 }); setSelectedSign(null); }}
+                style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', fontSize: 14, fontWeight: 700 }}
+              >
+                🎯 Fly to
+              </button>
+              {isManagerOrOwner && (
+                <button
+                  onClick={() => { deleteSignById(selectedSign.id); setSelectedSign(null); }}
+                  style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(239,68,68,0.15)', color: '#EF4444', fontSize: 14, fontWeight: 700 }}
+                >
+                  🗑 Delete
+                </button>
+              )}
+            </div>
+            <button onClick={() => setSelectedSign(null)} style={{ width: '100%', marginTop: 8, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', fontSize: 13 }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Signs list panel */}
+      {showSignsList && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowSignsList(false)}>
+          <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: '16px 20px 40px', maxHeight: '75vh', display: 'flex', flexDirection: 'column', border: '1px solid rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#00BFFF' }}>🚏 Signs ({signs.length})</div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {signs.length === 0 ? (
+                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>No signs yet. Tap 🪧 to enter Signs mode and drop one.</p>
+              ) : signs.map((sign) => (
+                <div key={sign.id} style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(0,191,255,0.06)', border: '1px solid rgba(0,191,255,0.15)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 20, flexShrink: 0 }}>🪧</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sign.label || 'Sign'}</div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{new Date(sign.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => { mapInstance.current?.flyTo({ center: [sign.lng, sign.lat], zoom: 17, duration: 800 }); setShowSignsList(false); }} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', cursor: 'pointer', fontSize: 14 }}>🎯</button>
+                    {isManagerOrOwner && <button onClick={() => { deleteSignById(sign.id); }} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'rgba(239,68,68,0.12)', color: '#EF4444', cursor: 'pointer', fontSize: 14 }}>🗑</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick pin picker */}
       {quickPinCoords && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setQuickPinCoords(null)}>
@@ -714,8 +1091,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       )}
 
       <style>{`
-        @keyframes pulseUser{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6;}50%{transform:translate(-50%,-50%) scale(1.5);opacity:0.2;}}
+        @keyframes pulseUser{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.55;}50%{transform:translate(-50%,-50%) scale(1.6);opacity:0.1;}}
         @keyframes pulseLive{0%,100%{opacity:1;}50%{opacity:0.3;}}
+        @keyframes neonBlink{0%,100%{opacity:1;filter:drop-shadow(0 0 6px #00BFFF) drop-shadow(0 0 12px #00BFFF);}50%{opacity:0.4;filter:drop-shadow(0 0 2px #00BFFF);}}
       `}</style>
     </div>
   );

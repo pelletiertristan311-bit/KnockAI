@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
 
     // Merge pins by userId: replace the syncing user's pins, keep all other users' pins
     let mergedPins = current.teamPins || [];
-    if (pins && pins.length >= 0) {
+    if (pins && pins.length > 0) {
+      // Only merge if there are actual pins — never overwrite with empty array
       const incomingUserIds = new Set((pins as any[]).map((p) => p.userId).filter(Boolean));
       mergedPins = [
         ...(current.teamPins || []).filter((p: any) => !incomingUserIds.has(p.userId)),
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Merge trailPoints by userId: same strategy
     let mergedTrail = current.trailPoints || [];
-    if (trailPoints && trailPoints.length >= 0) {
+    if (trailPoints && trailPoints.length > 0) {
       const incomingTrailUserIds = new Set((trailPoints as any[]).map((p) => p.userId).filter(Boolean));
       mergedTrail = [
         ...(current.trailPoints || []).filter((p: any) => !incomingTrailUserIds.has(p.userId)),

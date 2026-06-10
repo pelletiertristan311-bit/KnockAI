@@ -56,6 +56,16 @@ export default function KnockAIApp() {
     if (s.isAuthenticated && s.team?.id) {
       s.pushToTeam();
       s.pollTeamData();
+      // Migrate all local pins to Supabase (handles pins created before Supabase sync).
+      // Batch upsert: idempotent, fire-and-forget, ensures cross-device visibility.
+      if (s.pins.length > 0) {
+        const pinsWithTeam = s.pins.map((p) => ({ ...p, teamId: p.teamId || s.team!.id }));
+        fetch('/api/knockai/pins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pins: pinsWithTeam }),
+        }).catch(() => {});
+      }
     }
 
     // pollTeamData keeps team members, routes, dates and sale notifications in sync via Redis.

@@ -923,11 +923,13 @@ export const useKnockAIStore = create<KnockAIState>()(
           ...(data.teamDates && { teamDates: data.teamDates }),
           ...(data.routes && { routes: data.routes }),
           ...(data.team && { team: { ...data.team, logoUrl: data.team.logoUrl || state.team?.logoUrl } }),
-          ...(data.teamPins && {
-            pins: [
-              ...state.pins.filter((p) => p.userId === myId),
-              ...(data.teamPins as Pin[]).filter((p) => p.userId !== myId),
-            ],
+          ...(data.teamPins && data.teamPins.length > 0 && {
+            pins: (() => {
+              // Remote (Redis) is authoritative; keep any local-only pins not yet synced
+              const byId = new Map((data.teamPins as Pin[]).map((p: Pin) => [p.id, p]));
+              state.pins.forEach((p: Pin) => { if (!byId.has(p.id)) byId.set(p.id, p); });
+              return Array.from(byId.values());
+            })(),
           }),
           ...(data.trailPoints && {
             trailPoints: [

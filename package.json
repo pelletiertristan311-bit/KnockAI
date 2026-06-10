@@ -1,12 +1,13 @@
 {
   "name": "knockai",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "vercel --prod && vercel alias set knockai-hydrotechmtl-5352s-projects.vercel.app knockai.vercel.app"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -32,6 +33,7 @@
     "autoprefixer": "^10",
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
+    "playwright": "^1.60.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
