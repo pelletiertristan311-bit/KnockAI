@@ -15,7 +15,6 @@ export default function EditPinModal() {
   const [phone, setPhone] = useState(pin.phone || '');
   const [notes, setNotes] = useState(pin.notes || '');
   const [saving, setSaving] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const placedBy = pin.placedByAi ? '🤖 AI' : (pin.placedByName || 'Unknown');
 
@@ -63,19 +62,9 @@ export default function EditPinModal() {
       <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '16px', borderRadius: 12, border: 'none', cursor: 'pointer', background: `linear-gradient(90deg, ${PIN_COLORS[type]}, ${PIN_COLORS[type]}bb)`, color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 10 }}>
         {saving ? 'Saving...' : 'Save Changes'}
       </button>
-      <button onClick={() => setShowDeleteConfirm(true)} style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>
+      <button onClick={handleDelete} style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>
         Delete Pin
       </button>
-
-      {showDeleteConfirm && (
-        <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
-          <p style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 12, textAlign: 'center' }}>Delete this pin permanently?</p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowDeleteConfirm(false)} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleDelete} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: '#EF4444', color: '#fff', cursor: 'pointer', fontWeight: 700 }}>Delete</button>
-          </div>
-        </div>
-      )}
     </ModalSheet>
   );
 }

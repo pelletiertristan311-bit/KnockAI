@@ -27,9 +27,14 @@ export function useTeamPins(teamId: string | undefined, userId: string | undefin
         .then(({ data, error }) => {
           if (error || !data) return;
           const remotePins = data.map(mapRowToPin);
-          const { pins: localPins } = useKnockAIStore.getState();
-          const byId = new Map<string, typeof remotePins[0]>(remotePins.map((p) => [p.id, p]));
-          localPins.forEach((p) => { if (!byId.has(p.id)) byId.set(p.id, p as typeof remotePins[0]); });
+          const { pins: localPins, trashedPins } = useKnockAIStore.getState();
+          // Never resurrect pins that were already deleted locally
+          const trashedIds = new Set(trashedPins.map((p) => p.id));
+          const byId = new Map<string, typeof remotePins[0]>(
+            remotePins.filter((p) => !trashedIds.has(p.id)).map((p) => [p.id, p])
+          );
+          // Preserve local-only pins not yet synced to Supabase
+          localPins.forEach((p) => { if (!byId.has(p.id) && !trashedIds.has(p.id)) byId.set(p.id, p as typeof remotePins[0]); });
           useKnockAIStore.setState({ pins: Array.from(byId.values()) });
         });
     };
