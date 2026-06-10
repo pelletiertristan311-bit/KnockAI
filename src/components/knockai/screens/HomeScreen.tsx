@@ -143,6 +143,11 @@ export default function HomeScreen() {
             </div>
           </button>
           {isClockedIn && startTimeLabel && <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280', marginTop: 6 }}>{startTimeLabel}</div>}
+          {!isClockedIn && team && (
+            <div style={{ textAlign: 'center', fontSize: 11, color: '#6B7280', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+              <span>📍</span> Your location will be shared with your team while clocked in
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }} data-tour="home-stats">

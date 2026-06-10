@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
 import { useTeamPins } from '@/hooks/knockai/useTeamPins';
 import { useTeamDrawings } from '@/hooks/knockai/useTeamDrawings';
+import { useLiveLocation } from '@/hooks/knockai/useLiveLocation';
+import { useTeamLocations } from '@/hooks/knockai/useTeamLocations';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -26,6 +28,9 @@ export default function KnockAIApp() {
   // Supabase Realtime — instant pin and drawing sync across team members
   const realtimeStatus = useTeamPins(team?.id, user?.id);
   useTeamDrawings(team?.id, user?.id);
+  // Live location tracking — sends own GPS while clocked in, shows teammates on map
+  useLiveLocation();
+  useTeamLocations(team?.id, user?.id);
 
   useEffect(() => {
     setMounted(true);

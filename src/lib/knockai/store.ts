@@ -83,6 +83,18 @@ export interface TeamMember {
   salesToday?: number;
 }
 
+export interface LiveLocation {
+  id: string;
+  userId: string;
+  teamId: string;
+  lat: number;
+  lng: number;
+  heading?: number;
+  isActive: boolean;
+  clockedInAt: string;
+  updatedAt: string;
+}
+
 export interface SaleNotification {
   id: string;
   memberName: string;
@@ -211,6 +223,7 @@ interface KnockAIState {
   trashedPins: TrashedPin[];
   trashedTeams: TrashedTeam[];
   teamSettings: { shareLocation: boolean; showMemberTrails: boolean; salesNotif: boolean; dailyGoalSync: boolean; cities: string[] };
+  liveLocations: LiveLocation[];
 
   setAuthScreen: (screen: KnockAIState['authScreen']) => void;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -341,6 +354,7 @@ export const useKnockAIStore = create<KnockAIState>()(
       trashedPins: [],
       trashedTeams: [],
       teamSettings: { shareLocation: true, showMemberTrails: true, salesNotif: true, dailyGoalSync: false, cities: [] },
+      liveLocations: [],
 
       setAuthScreen: (screen) => set({ authScreen: screen }),
 

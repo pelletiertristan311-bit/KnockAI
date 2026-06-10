@@ -78,6 +78,49 @@ CREATE POLICY "Allow all deletes drawings" ON public.drawings FOR DELETE USING (
 ALTER PUBLICATION supabase_realtime ADD TABLE public.drawings;
 
 -- ============================================================
+-- live_locations table (real-time employee location tracking)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.live_locations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  team_id TEXT NOT NULL,
+  lat FLOAT8 NOT NULL,
+  lng FLOAT8 NOT NULL,
+  heading FLOAT4,
+  is_active BOOLEAN DEFAULT true,
+  clocked_in_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- One active row per (user, team) — enforces upsert-by-user_id+team_id
+CREATE UNIQUE INDEX IF NOT EXISTS live_locations_user_team_idx
+  ON public.live_locations (user_id, team_id);
+
+CREATE INDEX IF NOT EXISTS live_locations_team_active_idx
+  ON public.live_locations (team_id, is_active);
+
+ALTER TABLE public.live_locations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all reads live_locations" ON public.live_locations;
+CREATE POLICY "Allow all reads live_locations" ON public.live_locations
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow all inserts live_locations" ON public.live_locations;
+CREATE POLICY "Allow all inserts live_locations" ON public.live_locations
+  FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all updates live_locations" ON public.live_locations;
+CREATE POLICY "Allow all updates live_locations" ON public.live_locations
+  FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Allow all deletes live_locations" ON public.live_locations;
+CREATE POLICY "Allow all deletes live_locations" ON public.live_locations
+  FOR DELETE USING (true);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.live_locations;
+
+-- ============================================================
 -- DONE. Add these env vars to Vercel:
 --   NEXT_PUBLIC_SUPABASE_URL      = https://xxx.supabase.co
 --   NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJ...

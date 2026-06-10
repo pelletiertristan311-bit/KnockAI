@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { useKnockAIStore, Pin, PinType, type TeamDrawing } from '@/lib/knockai/store';
+import { useKnockAIStore, Pin, PinType, type TeamDrawing, type LiveLocation } from '@/lib/knockai/store';
 import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -109,6 +109,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [signLabelInput, setSignLabelInput] = useState('');
   const [selectedSign, setSelectedSign] = useState<{ id: string; lat: number; lng: number; label: string; createdAt: string } | null>(null);
   const [showSignsList, setShowSignsList] = useState(false);
+  const [selectedLiveLoc, setSelectedLiveLoc] = useState<{ loc: LiveLocation; address: string | null } | null>(null);
+  const [liveLocAddress, setLiveLocAddress] = useState<string | null>(null);
 
   drawingColorRef.current = drawingColor;
   isDrawingErasingRef.current = isDrawingErasing;
@@ -129,7 +131,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     return () => mq.removeEventListener('change', h);
   }, []);
 
-  const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team,
+  const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team, liveLocations,
     setUserLocation, setPinFilter, toggleAI, openAddPinModal, openEditPinModal, addPin,
     addRoute, deleteRoute, mapTheme, teamDrawings, addTeamDrawing, removeTeamDrawing } = useKnockAIStore();
 
@@ -425,20 +427,60 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     dotsSrc.setData({ type: 'FeatureCollection', features: streetDrawingPoints.map((pt) => ({ type: 'Feature', properties: { color: drawingColor }, geometry: { type: 'Point', coordinates: pt } })) });
   }, [streetDrawingPoints, drawingColor, mapStyleVersion]);
 
-  // Teammate location markers
+  // Teammate live location markers (neon photo circles)
   useEffect(() => {
     if (!mapInstance.current || !mapLoaded || !maplibreRef.current) return;
     const ml = maplibreRef.current;
     teammateMarkersRef.current.forEach((m) => m.remove());
     teammateMarkersRef.current = [];
-    teamMembers.filter((m) => m.lat && m.lng && m.isOnline).forEach((member) => {
-      const el = document.createElement('div');
-      el.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#8B5CF6;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 0 12px rgba(139,92,246,0.6);';
-      el.textContent = member.fullName.charAt(0);
-      const tm = new ml.Marker({ element: el, anchor: 'center' }).setLngLat([member.lng!, member.lat!]).addTo(mapInstance.current!);
+
+    liveLocations.forEach((loc) => {
+      const member = teamMembers.find((m) => m.id === loc.userId);
+      const name = member?.fullName || loc.userId;
+      const initials = name.split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+      const photoUrl = member?.profilePhotoUrl;
+      const heading = loc.heading;
+
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:relative;width:54px;height:66px;cursor:pointer;display:flex;flex-direction:column;align-items:center;';
+
+      // Pulsing neon ring
+      const ring = document.createElement('div');
+      ring.style.cssText = 'position:absolute;top:0;left:0;width:54px;height:54px;border-radius:50%;border:2.5px solid #00BFFF;animation:pulseLocation 2s ease-in-out infinite;pointer-events:none;box-sizing:border-box;';
+      wrapper.appendChild(ring);
+
+      // Photo circle
+      const circle = document.createElement('div');
+      circle.style.cssText = 'width:44px;height:44px;border-radius:50%;border:3px solid #00BFFF;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,191,255,0.55);margin-top:5px;flex-shrink:0;background:#1A2E4A;';
+      if (photoUrl) {
+        const img = document.createElement('img');
+        img.src = photoUrl;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        circle.appendChild(img);
+      } else {
+        circle.style.cssText += 'color:#fff;font-weight:800;font-size:14px;font-family:Inter,sans-serif;';
+        circle.textContent = initials;
+      }
+      wrapper.appendChild(circle);
+
+      // Directional arrow (if heading available)
+      if (heading != null) {
+        const arrow = document.createElement('div');
+        arrow.style.cssText = `width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid #00BFFF;margin-top:2px;filter:drop-shadow(0 0 3px #00BFFF);transform:rotate(${heading}deg);transform-origin:center top;flex-shrink:0;`;
+        wrapper.appendChild(arrow);
+      }
+
+      wrapper.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        setSelectedLiveLoc({ loc, address: null });
+        setLiveLocAddress(null);
+        reverseGeocode(loc.lat, loc.lng).then((addr) => setLiveLocAddress(addr));
+      });
+
+      const tm = new ml.Marker({ element: wrapper, anchor: 'top' }).setLngLat([loc.lng, loc.lat]).addTo(mapInstance.current!);
       teammateMarkersRef.current.push(tm);
     });
-  }, [teamMembers, mapLoaded]);
+  }, [liveLocations, teamMembers, mapLoaded]);
 
   // Geolocation watch
   useEffect(() => {
@@ -1090,10 +1132,65 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </div>
       )}
 
+      {/* Teammate live location popup */}
+      {selectedLiveLoc && (() => {
+        const { loc } = selectedLiveLoc;
+        const member = teamMembers.find((m) => m.id === loc.userId);
+        const name = member?.fullName || loc.userId;
+        const initials = name.split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+        const photoUrl = member?.profilePhotoUrl;
+        const clockedInSince = new Date(loc.clockedInAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={() => { setSelectedLiveLoc(null); setLiveLocAddress(null); }}>
+            <div style={{ width: '100%', maxWidth: 340, background: '#0D2B55', borderRadius: 20, padding: '24px 20px', border: '1px solid rgba(0,191,255,0.3)', boxShadow: '0 0 40px rgba(0,191,255,0.2)' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+                <div style={{ width: 60, height: 60, borderRadius: '50%', border: '3px solid #00BFFF', overflow: 'hidden', flexShrink: 0, background: '#1A2E4A', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(0,191,255,0.5)' }}>
+                  {photoUrl ? (
+                    <img src={photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ color: '#fff', fontWeight: 800, fontSize: 20 }}>{initials}</span>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{name}</div>
+                  <div style={{ fontSize: 12, color: '#00BFFF', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#00BFFF', display: 'inline-block', animation: 'pulseLive 2s ease-in-out infinite' }} />
+                    Clocked in since {clockedInSince}
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', marginBottom: 16, fontSize: 13, color: '#CBD5E1' }}>
+                <span style={{ color: '#9CA3AF', fontSize: 11, display: 'block', marginBottom: 3 }}>Current location</span>
+                {liveLocAddress || `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => { mapInstance.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 17, duration: 800 }); setSelectedLiveLoc(null); setLiveLocAddress(null); }}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(0,191,255,0.12)', color: '#00BFFF', fontSize: 14, fontWeight: 700 }}
+                >
+                  🎯 Fly to
+                </button>
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #0094C8, #00BFFF)', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  🧭 Navigate
+                </a>
+              </div>
+              <button onClick={() => { setSelectedLiveLoc(null); setLiveLocAddress(null); }} style={{ width: '100%', marginTop: 8, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', fontSize: 13 }}>Close</button>
+            </div>
+          </div>
+        );
+      })()}
+
       <style>{`
         @keyframes pulseUser{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.55;}50%{transform:translate(-50%,-50%) scale(1.6);opacity:0.1;}}
         @keyframes pulseLive{0%,100%{opacity:1;}50%{opacity:0.3;}}
         @keyframes neonBlink{0%,100%{opacity:1;filter:drop-shadow(0 0 6px #00BFFF) drop-shadow(0 0 12px #00BFFF);}50%{opacity:0.4;filter:drop-shadow(0 0 2px #00BFFF);}}
+        @keyframes pulseLocation{0%,100%{transform:scale(1);opacity:0.9;box-shadow:0 0 8px rgba(0,191,255,0.6);}50%{transform:scale(1.18);opacity:0.3;box-shadow:0 0 18px rgba(0,191,255,0.35);}}
       `}</style>
     </div>
   );
