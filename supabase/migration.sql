@@ -2,6 +2,17 @@
 -- KnockAI — Supabase Migration
 -- Run this in: Supabase Dashboard > SQL Editor
 -- ============================================================
+--
+-- ⚠️  REQUIRED FOR LIVE APP TO WORK:
+--   1. Run this entire file in Supabase > SQL Editor
+--   2. Set these env vars in Vercel dashboard:
+--        NEXT_PUBLIC_SUPABASE_URL      = https://xxxx.supabase.co
+--        NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJ...
+--        SUPABASE_SERVICE_ROLE_KEY     = eyJ... (Settings > API > service_role key)
+--   3. In Supabase > Database > Replication: confirm supabase_realtime
+--      publication includes: pins, drawings, live_locations tables
+--
+-- ============================================================
 
 -- 1. Create pins table
 CREATE TABLE IF NOT EXISTS public.pins (

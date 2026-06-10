@@ -5,6 +5,7 @@ import { useTeamPins } from '@/hooks/knockai/useTeamPins';
 import { useTeamDrawings } from '@/hooks/knockai/useTeamDrawings';
 import { useLiveLocation } from '@/hooks/knockai/useLiveLocation';
 import { useTeamLocations } from '@/hooks/knockai/useTeamLocations';
+import { useClockInNotifications, type ClockInToast } from '@/hooks/knockai/useClockInNotifications';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -24,6 +25,7 @@ export default function KnockAIApp() {
   const { isAuthenticated, authScreen, activeTab, addPinModal, editPinModal, statsModal, isOnline, setOnline, saleNotifications, dismissSaleNotification, pinNotifications, dismissPinNotification, user, team } = useKnockAIStore();
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [clockInToasts, setClockInToasts] = useState<ClockInToast[]>([]);
 
   // Supabase Realtime — instant pin and drawing sync across team members
   const realtimeStatus = useTeamPins(team?.id, user?.id);
@@ -31,6 +33,8 @@ export default function KnockAIApp() {
   // Live location tracking — sends own GPS while clocked in, shows teammates on map
   useLiveLocation();
   useTeamLocations(team?.id, user?.id);
+  // Clock-in notifications — in-app toast when any teammate clocks in
+  useClockInNotifications(team?.id, user?.id, setClockInToasts);
 
   useEffect(() => {
     setMounted(true);
@@ -111,6 +115,31 @@ export default function KnockAIApp() {
 
   const overlays = (
     <>
+      {/* Clock-in toasts — appear when any teammate clocks in */}
+      {clockInToasts.length > 0 && (
+        <div style={{ position: 'fixed', top: isOnline ? 12 : 44, left: 12, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300 }}>
+          {clockInToasts.map((toast) => {
+            const initials = toast.userName.split(' ').map((w) => w[0] || '').join('').substring(0, 2).toUpperCase();
+            return (
+              <div key={toast.id} style={{ background: '#0D2B55', border: '1px solid rgba(0,191,255,0.3)', borderLeft: '3px solid #00BFFF', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,191,255,0.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #00BFFF', overflow: 'hidden', flexShrink: 0, background: '#1A2E4A', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 8px rgba(0,191,255,0.5)' }}>
+                  {toast.profilePhotoUrl ? (
+                    <img src={toast.profilePhotoUrl} alt={toast.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ color: '#00BFFF', fontWeight: 800, fontSize: 11 }}>{initials}</span>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{toast.userName} just clocked in 🟢</div>
+                  <div style={{ fontSize: 10, color: '#00BFFF', marginTop: 2 }}>Now active on map</div>
+                </div>
+                <button onClick={() => setClockInToasts((p) => p.filter((t) => t.id !== toast.id))} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {!isOnline && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999, background: '#374151', color: '#fff', textAlign: 'center', padding: '8px 16px', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <span>📵</span> Mode hors-ligne — les données sont sauvegardées localement

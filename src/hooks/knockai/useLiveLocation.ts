@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
+import { getSupabaseClient } from '@/lib/knockai/supabase';
 
 const UPDATE_INTERVAL_MS = 20_000;
 const MIN_MOVE_METERS = 20;
@@ -14,6 +15,38 @@ function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Posts location to the API, routing through the SW when available so
+// Background Sync can retry failed updates on network recovery.
+function dispatchLocation(payload: { userId: string; teamId: string; lat: number; lng: number; heading: number | null }) {
+  // Try direct fetch first; on failure, hand off to service worker for retry
+  fetch('/api/knockai/live-location', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'LOCATION_UPDATE', payload });
+    }
+  });
+}
+
+// Broadcasts clock-in event so teammates' in-app toasts fire instantly.
+function broadcastClockIn(teamId: string, userId: string, userName: string, profilePhotoUrl?: string) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+  const ch = supabase.channel(`team-clockin-${teamId}`);
+  ch.subscribe((status) => {
+    if (status !== 'SUBSCRIBED') return;
+    ch.send({
+      type: 'broadcast',
+      event: 'clock_in',
+      payload: { userId, userName, profilePhotoUrl },
+    }).catch(() => {});
+    // Tear down this one-shot broadcast channel after 2 seconds
+    setTimeout(() => supabase.removeChannel(ch), 2000);
+  });
+}
+
 export function useLiveLocation() {
   const isClockedIn = useKnockAIStore((s) => s.isClockedIn);
   const lastSentRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
@@ -25,7 +58,6 @@ export function useLiveLocation() {
     const last = lastSentRef.current;
     if (last) {
       const dist = haversineDist(last.lat, last.lng, lat, lng);
-      // Skip if < MIN_MOVE_METERS AND too soon since last update
       if (dist < MIN_MOVE_METERS && now - last.ts < UPDATE_INTERVAL_MS) return;
     }
     lastSentRef.current = { lat, lng, ts: now };
@@ -33,16 +65,12 @@ export function useLiveLocation() {
     const { user, team } = useKnockAIStore.getState();
     if (!user?.id || !team?.id) return;
 
-    fetch('/api/knockai/live-location', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, teamId: team.id, lat, lng, heading: heading ?? null }),
-    }).catch(() => {});
+    dispatchLocation({ userId: user.id, teamId: team.id, lat, lng, heading: heading ?? null });
   };
 
   useEffect(() => {
     if (!isClockedIn) {
-      // Deactivate when clocked out
+      // Deactivate on clock-out
       const { user, team } = useKnockAIStore.getState();
       if (user?.id && team?.id) {
         fetch('/api/knockai/live-location', {
@@ -56,6 +84,12 @@ export function useLiveLocation() {
 
     if (!navigator.geolocation) return;
 
+    // Broadcast clock-in to all online teammates
+    const { user, team } = useKnockAIStore.getState();
+    if (user?.id && team?.id) {
+      broadcastClockIn(team.id, user.id, user.fullName || user.email || '', user.profilePhotoUrl);
+    }
+
     // Immediate first fix
     navigator.geolocation.getCurrentPosition(
       (pos) => sendLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.heading ?? undefined),
@@ -63,14 +97,15 @@ export function useLiveLocation() {
       { enableHighAccuracy: true, timeout: 10000 }
     );
 
-    // watchPosition for ongoing foreground updates
+    // Continuous foreground tracking
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => sendLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.heading ?? undefined),
       () => {},
       { enableHighAccuracy: true, maximumAge: 5000 }
     );
 
-    // Fallback interval: ensures updates even if watchPosition stalls (e.g. iOS PWA background)
+    // 20-second fallback interval — keeps updates flowing when watchPosition
+    // stalls (common in iOS PWA when screen dims or app is backgrounded)
     intervalRef.current = setInterval(() => {
       navigator.geolocation.getCurrentPosition(
         (pos) => sendLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.heading ?? undefined),
