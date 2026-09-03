@@ -241,6 +241,7 @@ interface KnockAIState {
   updateUser: (updates: Partial<User>) => void;
   updateTeam: (updates: Partial<Team>) => void;
   updateMemberRole: (userId: string, role: UserRole) => void;
+  transferOwnership: (targetId: string) => void;
   createTeam: (name: string) => Promise<void>;
   joinTeam: (code: string) => Promise<{ ok: boolean; error?: string }>;
   leaveTeam: () => void;
@@ -661,6 +662,20 @@ export const useKnockAIStore = create<KnockAIState>()(
         teamMembers: state.teamMembers.map((m) => m.id === userId ? { ...m, role } : m),
         user: state.user?.id === userId ? { ...state.user, role } : state.user,
       })),
+
+      transferOwnership: (targetId) => {
+        const { user, team, teamMembers, teamDates, routes, pins, trailPoints } = get();
+        if (!user || !team || user.role !== 'owner') return;
+        const updatedMembers = teamMembers.map((m) => {
+          if (m.id === targetId) return { ...m, role: 'owner' as UserRole };
+          if (m.id === user.id) return { ...m, role: 'manager' as UserRole };
+          return m;
+        });
+        set({ teamMembers: updatedMembers });
+        // Push the transfer to the server before leaveTeam() clears local
+        // team state — otherwise the change never reaches Redis at all.
+        syncTeamToRedis(team.id, updatedMembers, teamDates, routes, team, pins.filter((p) => p.userId === user.id), trailPoints.filter((p) => p.userId === user.id));
+      },
 
       createTeam: async (name) => {
         const { user } = get();

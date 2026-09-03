@@ -274,7 +274,7 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
   const [leaveFlow, setLeaveFlow] = useState<null | 'confirm' | 'transfer' | 'delete'>(null);
   const [transferTarget, setTransferTarget] = useState('');
   const logoRef = useRef<HTMLInputElement>(null);
-  const { updateMemberRole } = useKnockAIStore();
+  const { transferOwnership } = useKnockAIStore();
 
   const isOwner = user?.role === 'owner';
   const isManager = user?.role === 'manager' || isOwner;
@@ -433,7 +433,7 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
             <button onClick={() => setLeaveFlow(null)} style={{ flex: 1, padding: '13px', borderRadius: 12, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', cursor: 'pointer' }}>{t.cancel}</button>
             <button
               disabled={!transferTarget}
-              onClick={() => { if (transferTarget) { updateMemberRole(transferTarget, 'owner'); leaveTeam(); setLeaveFlow(null); setOpen(false); } }}
+              onClick={() => { if (transferTarget) { transferOwnership(transferTarget); leaveTeam(); setLeaveFlow(null); setOpen(false); } }}
               style={{ flex: 2, padding: '13px', borderRadius: 12, border: 'none', background: transferTarget ? '#F59E0B' : '#374151', color: '#fff', fontWeight: 700, cursor: transferTarget ? 'pointer' : 'default' }}
             >
               Transférer &amp; Quitter
@@ -1149,8 +1149,20 @@ function smallBtn(bg: string): React.CSSProperties {
   return { padding: '6px 14px', borderRadius: 8, border: 'none', background: bg, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 };
 }
 
+// Neutralizes CSV/Excel formula injection: a cell whose text starts with
+// =, +, -, @ (or a tab/CR) can be interpreted as a formula by Excel/Sheets
+// when the file is opened. Pin notes and lead names are free text entered
+// by any team member, so this data is never trustworthy as-is. Prefixing
+// with an apostrophe forces text interpretation without changing what the
+// reader sees.
+function sanitizeCell(v: string | number): string | number {
+  if (typeof v !== 'string') return v;
+  return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+}
+
 function downloadExcel(rows: (string | number)[][], sheetName: string, filename: string) {
-  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const safeRows = rows.map((row) => row.map(sanitizeCell));
+  const ws = XLSX.utils.aoa_to_sheet(safeRows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
   XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : filename + '.xlsx');

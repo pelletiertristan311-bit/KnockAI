@@ -21,6 +21,12 @@ const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '
 const PIN_ICONS: Record<PinType, string> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: 'AI' };
 const DRAW_COLORS = ['#EF4444', '#1F2937', '#3B82F6'];
 
+// Falls back to the original hardcoded key so the map doesn't break before
+// NEXT_PUBLIC_MAPTILER_KEY is set — but that key is exposed in the public
+// source and should be rotated for a fresh, domain-restricted one in the
+// MapTiler dashboard, then set as the env var.
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || 'l7T65duPkEOuA9Ji3cmf';
+
 // Teammates' drawings are shown in bright red to distinguish from own
 const TEAMMATE_DRAWING_COLOR = '#FF3B30';
 
@@ -164,7 +170,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       }
       const { userLocation: initLoc, mapTheme: initTheme } = useKnockAIStore.getState();
       const initCenter: [number, number] = initLoc ? [initLoc.lng, initLoc.lat] : [-73.5673, 45.5017];
-      const styleUrl = initTheme === 'dark' ? 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=l7T65duPkEOuA9Ji3cmf' : 'https://api.maptiler.com/maps/streets-v2/style.json?key=l7T65duPkEOuA9Ji3cmf';
+      const styleUrl = initTheme === 'dark' ? `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}` : `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
       try {
         const map = new ml.Map({ container: mapRef.current!, style: styleUrl, center: initCenter, zoom: 15, attributionControl: false });
         let loaded = false;
@@ -221,7 +227,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   useEffect(() => {
     if (!mapInstance.current || !mapLoaded) return;
     const map = mapInstance.current;
-    const styleUrl = mapTheme === 'dark' ? 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=l7T65duPkEOuA9Ji3cmf' : 'https://api.maptiler.com/maps/streets-v2/style.json?key=l7T65duPkEOuA9Ji3cmf';
+    const styleUrl = mapTheme === 'dark' ? `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}` : `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
     map.setStyle(styleUrl);
     map.once('style.load', () => {
       if (mapTheme === 'light') {

@@ -32,6 +32,27 @@ export async function POST(req: NextRequest) {
     const existing: any = await redis.get(TEAM_KEY(teamId));
     const current = existing ? (typeof existing === 'string' ? JSON.parse(existing) : existing) : {};
 
+    // Enforce role-change permissions server-side: only the current owner
+    // may grant or revoke 'owner', and only owner/manager may change any
+    // role at all (never their own). A disallowed change is silently
+    // reverted to the previously stored role rather than rejecting the
+    // whole sync, so unrelated fields (isOnline, doorsToday, ...) still go
+    // through.
+    let safeTeamMembers = teamMembers;
+    if (Array.isArray(teamMembers)) {
+      const priorMembers = current.teamMembers || [];
+      const priorById = new Map(priorMembers.map((m: any) => [m.id, m]));
+      const callerRole = (priorById.get(uid) as any)?.role || 'member';
+
+      safeTeamMembers = teamMembers.map((m: any) => {
+        const prior: any = priorById.get(m.id);
+        if (!prior || prior.role === m.role) return m; // new member or no role change
+        const touchesOwner = m.role === 'owner' || prior.role === 'owner';
+        const allowed = callerRole === 'owner' || (callerRole === 'manager' && !touchesOwner && m.id !== uid);
+        return allowed ? m : { ...m, role: prior.role };
+      });
+    }
+
     // Merge pins by userId: replace the syncing user's pins, keep all other users' pins
     let mergedPins = current.teamPins || [];
     if (safePins && safePins.length > 0) {
@@ -62,7 +83,7 @@ export async function POST(req: NextRequest) {
     const updated = {
       ...current,
       ...(team && { team }),
-      ...(teamMembers && { teamMembers }),
+      ...(safeTeamMembers && { teamMembers: safeTeamMembers }),
       ...(teamDates && { teamDates }),
       ...(routes && { routes }),
       teamPins: mergedPins,

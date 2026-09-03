@@ -215,8 +215,12 @@ function MembersTab({ members, user, isManager, updateMemberRole, t, rl }: any) 
   );
 }
 
-function RoleModal({ member, onClose, updateMemberRole, t, rl, currentUserRole }: any) {
-  const roles: UserRole[] = ['member', 'manager', 'owner'];
+function RoleModal({ member, onClose, updateMemberRole, t, rl }: any) {
+  // 'owner' is deliberately not selectable here — ownership only ever moves
+  // through the dedicated "Transfer Ownership" flow (Settings > Team),
+  // which correctly demotes the outgoing owner at the same time. Letting
+  // this modal grant 'owner' could create two owners at once.
+  const roles: UserRole[] = ['member', 'manager'];
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 360, background: '#1E293B', borderRadius: 20, padding: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
