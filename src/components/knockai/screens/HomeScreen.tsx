@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
+import { reverseGeocode } from '@/lib/knockai/geocode';
 
 function formatTime(seconds: number) {
   const h = Math.floor(seconds / 3600);
@@ -88,8 +89,10 @@ export default function HomeScreen() {
     if (!navigator.geolocation) return;
     setQuickPinLoading(pinType);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        addPin({ lat: pos.coords.latitude, lng: pos.coords.longitude, type: pinType, address: '', placedByAi: false, teamId: team?.id });
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const address = await reverseGeocode(lat, lng);
+        addPin({ lat, lng, type: pinType, address, placedByAi: false, teamId: team?.id });
         setQuickPinLoading(null);
         setQuickPinFeedback(pinType);
         setTimeout(() => setQuickPinFeedback(null), 2000);
