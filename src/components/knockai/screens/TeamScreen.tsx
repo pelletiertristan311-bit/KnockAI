@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useKnockAIStore, UserRole, TeamMember, Route, TeamDate } from '@/lib/knockai/store';
+import { Trophy, Camera, Building2, Search, Calendar, CalendarDays, Trash2, Pin, Map as MapIcon, Medal, Target, Handshake } from 'lucide-react';
 
 const ROLE_COLORS: Record<UserRole, string> = { owner: '#7C3AED', manager: '#1A6FD6', member: '#374151' };
 const ROLE_LABELS: Record<string, Record<UserRole, string>> = {
@@ -62,7 +63,7 @@ export default function TeamScreen() {
       <div style={{ padding: '12px 16px 0' }}>
         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 4, marginBottom: 12 }}>
           {(['today', 'all'] as const).map((mode) => (
-            <button key={mode} onClick={() => setStatsMode(mode)} style={{ flex: 1, padding: '7px', borderRadius: 8, border: 'none', background: statsMode === mode ? '#1A6FD6' : 'transparent', color: statsMode === mode ? '#fff' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}>
+            <button key={mode} onClick={() => setStatsMode(mode)} style={{ flex: 1, padding: '7px', borderRadius: 8, border: 'none', background: statsMode === mode ? '#1A6FD6' : 'transparent', color: statsMode === mode ? '#fff' : '#8B92A5', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}>
               {mode === 'today' ? t.today : t.allTime}
             </button>
           ))}
@@ -78,7 +79,7 @@ export default function TeamScreen() {
 
       <div style={{ display: 'flex', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
         {tabs.map(({ id, label }) => (
-          <button key={id} onClick={() => setTeamTab(id)} data-tour={`team-tab-${id}`} style={{ flex: 1, padding: '10px 4px', background: 'none', border: 'none', borderBottom: `2px solid ${teamTab === id ? '#1A6FD6' : 'transparent'}`, color: teamTab === id ? '#1A6FD6' : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+          <button key={id} onClick={() => setTeamTab(id)} data-tour={`team-tab-${id}`} style={{ flex: 1, padding: '10px 4px', background: 'none', border: 'none', borderBottom: `2px solid ${teamTab === id ? '#1A6FD6' : 'transparent'}`, color: teamTab === id ? '#1A6FD6' : '#8B92A5', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
             {label}
           </button>
         ))}
@@ -125,11 +126,11 @@ function TeamHeader({ team, isManager, updateTeam, t, lang, rl, user }: any) {
           onMouseLeave={() => setLogoHover(false)}
           onClick={() => isOwner && fileInputRef.current?.click()}
         >
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, overflow: 'hidden' }}>
-            {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 14 }} /> : '🏆'}
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: '#fff' }}>
+            {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 14 }} /> : <Trophy size={26} />}
           </div>
           {isOwner && logoHover && (
-            <div style={{ position: 'absolute', inset: 0, borderRadius: 14, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📷</div>
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 14, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><Camera size={18} /></div>
           )}
           {isOwner && (
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
@@ -145,11 +146,11 @@ function TeamHeader({ team, isManager, updateTeam, t, lang, rl, user }: any) {
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{team.name}</span>
-              {isManager && <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: 14 }}>✏️</button>}
+              {isManager && <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B92A5', fontSize: 14 }}>✏️</button>}
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{t.inviteCode}:</span>
+            <span style={{ fontSize: 12, color: '#8B92A5' }}>{t.inviteCode}:</span>
             <span style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 800, color: '#1A6FD6', letterSpacing: 2 }}>{team.inviteCode}</span>
             <button onClick={handleShare} style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(26,111,214,0.4)', background: 'rgba(26,111,214,0.1)', color: copied ? '#10B981' : '#1A6FD6', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
               {copied ? '✓ Copied' : t.share}
@@ -180,7 +181,7 @@ function StatCard({ value, label, color, small }: { value: number | string; labe
   return (
     <div style={{ padding: '10px 8px', borderRadius: 10, background: `${color}15`, border: `1px solid ${color}30`, textAlign: 'center' }}>
       <div style={{ fontSize: small ? 13 : 20, fontWeight: 800, color, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
-      <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 10, color: '#8B92A5', marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -198,13 +199,13 @@ function MembersTab({ members, user, isManager, updateMemberRole, t, rl }: any) 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
               {m.fullName}
-              {m.id === user?.id && <span style={{ fontSize: 10, color: '#6B7280' }}>(you)</span>}
+              {m.id === user?.id && <span style={{ fontSize: 10, color: '#8B92A5' }}>(you)</span>}
             </div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{m.email}</div>
+            <div style={{ fontSize: 12, color: '#8B92A5' }}>{m.email}</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <div style={{ padding: '2px 8px', borderRadius: 10, background: ROLE_COLORS[m.role], fontSize: 10, fontWeight: 700, color: '#fff' }}>{rl[m.role]}</div>
-            <div style={{ fontSize: 11, color: m.isOnline ? '#10B981' : '#6B7280' }}>{m.isOnline ? t.online : t.offline}</div>
+            <div style={{ fontSize: 11, color: m.isOnline ? '#10B981' : '#8B92A5' }}>{m.isOnline ? t.online : t.offline}</div>
           </div>
         </div>
       ))}
@@ -226,9 +227,9 @@ function RoleModal({ member, onClose, updateMemberRole, t, rl }: any) {
       <div style={{ width: '100%', maxWidth: 360, background: '#1E293B', borderRadius: 20, padding: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <h3 style={{ color: '#fff', margin: 0, fontSize: 17, fontWeight: 800 }}>{member.fullName}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 20 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8B92A5', cursor: 'pointer', fontSize: 20 }}>×</button>
         </div>
-        <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.role}</p>
+        <p style={{ fontSize: 12, color: '#8B92A5', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.role}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {roles.map((r) => (
             <button key={r} onClick={() => { updateMemberRole(member.id, r); onClose(); }}
@@ -335,7 +336,7 @@ function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDa
             onClick={() => setShowFilterDrop((v) => !v)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 11px', borderRadius: 10, border: `1px solid ${activeFilter ? 'rgba(26,111,214,0.6)' : 'rgba(255,255,255,0.12)'}`, background: activeFilter ? 'rgba(26,111,214,0.15)' : 'rgba(255,255,255,0.06)', color: activeFilter ? '#60A5FA' : '#9CA3AF', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
           >
-            <span>🏙</span>
+            <Building2 size={14} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{filterLabel}</span>
             {activeFilter ? (
               <span onClick={(e) => { e.stopPropagation(); handleClearFilter(); }} style={{ color: '#9CA3AF', fontSize: 15, lineHeight: 1, marginLeft: 1 }}>×</span>
@@ -388,7 +389,7 @@ function DatesTab({ dates, user, isManager, addTeamDate, addTeamDay, claimTeamDa
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {filteredMonthDates.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', color: '#4B5563', fontSize: 14, textAlign: 'center', gap: 10 }}>
-            <span style={{ fontSize: 40 }}>{activeFilter ? '🔍' : '📅'}</span>
+            <span style={{ display: 'flex' }}>{activeFilter ? <Search size={40} /> : <Calendar size={40} />}</span>
             <span>{activeFilter ? t.noResults : t.noDates}</span>
           </div>
         ) : (
@@ -458,10 +459,10 @@ function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, delet
                 )}
               </div>
             ) : (
-              <div style={{ color: '#6B7280', fontWeight: 600, fontSize: 13, fontStyle: 'italic' }}>— {t.city} —</div>
+              <div style={{ color: '#8B92A5', fontWeight: 600, fontSize: 13, fontStyle: 'italic' }}>— {t.city} —</div>
             )}
             <div style={{ color: '#9CA3AF', fontSize: 12, marginTop: 2 }}>{formattedDate} · {date.time}</div>
-            {date.notes && <div style={{ color: '#6B7280', fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{date.notes}</div>}
+            {date.notes && <div style={{ color: '#8B92A5', fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{date.notes}</div>}
             {isClaimed && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
                 <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>✓ {t.bookedBy}: {date.claimedByName}</span>
@@ -492,7 +493,7 @@ function DateCard({ date, user, isManager, claimTeamDate, unclaimTeamDate, delet
                   <button onClick={() => setConfirmDelete(false)} style={{ padding: '5px 8px', borderRadius: 7, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 11, cursor: 'pointer' }}>✕</button>
                 </div>
               ) : (
-                <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4B5563', fontSize: 15, padding: '2px 4px' }}>🗑</button>
+                <button onClick={() => setConfirmDelete(true)} aria-label={t.delete || 'Delete'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4B5563', padding: 10, display: 'flex' }}><Trash2 size={15} /></button>
               )
             )}
           </div>
@@ -545,17 +546,17 @@ function BookWithCityModal({ date, teamSettings, onClose, onConfirm, t }: any) {
         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '12px auto 20px' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <h3 style={{ color: '#fff', margin: 0, fontSize: 18, fontWeight: 800 }}>{t.book}</h3>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 44, height: 44, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
         <div style={{ color: '#9CA3AF', fontSize: 13, marginBottom: 20 }}>{formattedDate} · {date.time}</div>
 
-        <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', marginBottom: 18, fontSize: 12, color: '#F59E0B' }}>
-          📌 {t.enterCity} — {t.requiredCity}
+        <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', marginBottom: 18, fontSize: 12, color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Pin size={14} /> {t.enterCity} — {t.requiredCity}
         </div>
 
         <label style={{ display: 'block', color: '#9CA3AF', fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 }}>{t.city} *</label>
         {cities.length > 0 ? (
-          <select value={city} onChange={(e) => setCity(e.target.value)} style={{ ...inputStyle, background: '#1E293B', color: city ? '#fff' : '#6B7280', marginBottom: 20 }}>
+          <select value={city} onChange={(e) => setCity(e.target.value)} style={{ ...inputStyle, background: '#1E293B', color: city ? '#fff' : '#8B92A5', marginBottom: 20 }}>
             <option value="">-- {t.city} --</option>
             {cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -593,10 +594,10 @@ function AddDayModal({ onClose, addTeamDay, team, user, t }: any) {
         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '12px auto 20px' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ color: '#fff', margin: 0, fontSize: 18, fontWeight: 800 }}>{t.addDayTitle}</h3>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18, width: 44, height: 44, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
-        <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', marginBottom: 20, fontSize: 12, color: '#A78BFA' }}>
-          🗓 {t.addDayDesc}
+        <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', marginBottom: 20, fontSize: 12, color: '#A78BFA', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <CalendarDays size={14} /> {t.addDayDesc}
         </div>
         <div>
           <label style={labelStyle}>{t.date} *</label>
@@ -663,7 +664,7 @@ function AddDateModal({ onClose, addTeamDate, team, user, teamSettings, t }: any
             <label style={labelStyle}>{t.city} *</label>
             {cities.length > 0 ? (
               <select value={city} onChange={(e) => setCity(e.target.value)}
-                style={{ ...inputStyle, background: '#1E293B', color: city ? '#fff' : '#6B7280' }}>
+                style={{ ...inputStyle, background: '#1E293B', color: city ? '#fff' : '#8B92A5' }}>
                 <option value="">-- {t.city} --</option>
                 {cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -703,10 +704,10 @@ function RoutesTab({ routes, isManager, deleteRoute, t }: { routes: Route[]; isM
     <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {routes.map((r) => (
         <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🗺️</div>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#A78BFA' }}><MapIcon size={18} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{r.name}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{r.placedByName} · {new Date(r.createdAt).toLocaleDateString()}</div>
+            <div style={{ fontSize: 12, color: '#8B92A5' }}>{r.placedByName} · {new Date(r.createdAt).toLocaleDateString()}</div>
           </div>
           {isManager && (
             confirmId === r.id ? (
@@ -715,7 +716,7 @@ function RoutesTab({ routes, isManager, deleteRoute, t }: { routes: Route[]; isM
                 <button onClick={() => setConfirmId(null)} style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✕</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmId(r.id)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 12, cursor: 'pointer' }}>🗑</button>
+              <button onClick={() => setConfirmId(r.id)} aria-label="Delete route" style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 12, cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
             )
           )}
         </div>
@@ -734,23 +735,23 @@ function LeaderboardTab({ members, pins, todayPins, statsMode, t }: any) {
     doors: statsMode === 'today' ? (m.doorsToday || 0) : targetPins.filter((p: any) => p.userId === m.id).length,
   })).sort((a, b) => b.sales - a.sales || b.doors - a.doors);
 
-  const medals = ['🥇', '🥈', '🥉'];
+  const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
   return (
     <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {ranked.map((m, i) => (
         <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: i === 0 ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${i === 0 ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.07)'}` }}>
-          <div style={{ width: 30, textAlign: 'center', fontSize: i < 3 ? 22 : 14, fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-            {i < 3 ? medals[i] : `#${i + 1}`}
+          <div style={{ width: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#8B92A5', flexShrink: 0 }}>
+            {i < 3 ? <Medal size={22} color={medalColors[i]} /> : `#${i + 1}`}
           </div>
           <MemberAvatar member={m} size={36} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{m.fullName}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{m.doors} {t.doors} · {m.sales} {t.sales}</div>
+            <div style={{ fontSize: 12, color: '#8B92A5' }}>{m.doors} {t.doors} · {m.sales} {t.sales}</div>
           </div>
           {m.sales > 0 && (
-            <div style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10B981', fontSize: 13, fontWeight: 800 }}>
-              {m.sales} 🎯
+            <div style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10B981', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {m.sales} <Target size={13} />
             </div>
           )}
         </div>
@@ -786,9 +787,9 @@ function NoTeam({ t, createTeam, joinTeam }: { t: Record<string, string>; create
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, background: '#0F172A' }}>
-      <div style={{ fontSize: 64, marginBottom: 20 }}>🤝</div>
+      <div style={{ display: 'flex', color: '#8B92A5', marginBottom: 20 }}><Handshake size={64} /></div>
       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px', textAlign: 'center' }}>{t.noTeam}</h2>
-      <p style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', marginBottom: 32, lineHeight: 1.6 }}>{t.joinPrompt}</p>
+      <p style={{ color: '#8B92A5', fontSize: 14, textAlign: 'center', marginBottom: 32, lineHeight: 1.6 }}>{t.joinPrompt}</p>
 
       {mode === 'none' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320 }}>

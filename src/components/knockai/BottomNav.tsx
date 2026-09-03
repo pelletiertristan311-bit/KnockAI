@@ -26,7 +26,7 @@ export default function BottomNav({ isDesktop = false }: { isDesktop?: boolean }
             </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: -0.5 }}>Knock<span style={{ color: '#1A6FD6' }}>AI</span></div>
-            <div style={{ fontSize: 11, color: '#6B7280' }}>Door-to-door platform</div>
+            <div style={{ fontSize: 11, color: '#8B92A5' }}>Door-to-door platform</div>
           </div>
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, padding: '0 12px' }}>
@@ -49,7 +49,7 @@ export default function BottomNav({ isDesktop = false }: { isDesktop?: boolean }
       {tabs.map(({ id, label, icon: Icon }) => {
         const active = activeTab === id;
         return (
-          <button key={id} onClick={() => setActiveTab(id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: active ? '#1A6FD6' : '#6B7280', transition: 'all 0.2s', position: 'relative' }}>
+          <button key={id} onClick={() => setActiveTab(id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: active ? '#1A6FD6' : '#8B92A5', transition: 'all 0.2s', position: 'relative' }}>
             <div style={{ transform: active ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.2s' }}>
               <Icon size={22} />
             </div>

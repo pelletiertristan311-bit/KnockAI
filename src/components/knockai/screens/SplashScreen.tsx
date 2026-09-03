@@ -16,7 +16,7 @@ export default function SplashScreen() {
         <div style={{ width: 140, height: 140, borderRadius: 32, overflow: 'hidden', boxShadow: '0 0 50px rgba(26,111,214,0.5)' }}>
           <img src="/knockai-icon.png" alt="KnockAI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
-        <div style={{ color: '#6B7280', fontSize: 14, marginTop: 8 }}>AI-Powered Sales Tracker</div>
+        <div style={{ color: '#8B92A5', fontSize: 14, marginTop: 8 }}>AI-Powered Sales Tracker</div>
       </div>
       <div style={{ position: 'absolute', bottom: 48, display: 'flex', gap: 6 }}>
         {[0, 1, 2].map((i) => (

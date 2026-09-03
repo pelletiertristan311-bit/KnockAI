@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
+import { Home, Users, Map as MapIcon, Settings, ArrowDown, ArrowUp, DoorOpen, PartyPopper } from 'lucide-react';
 
 /* ─── Tour config ─────────────────────────────────────────── */
 
@@ -38,11 +39,11 @@ const STEPS: TourStep[] = [
   { tab: 'settings', selector: '[data-tour="settings-notifs"]',     title: '🔔 Préférences & Notifs',    desc: "Active/désactive les alertes de ventes, messages, IA. Choisis aussi ta langue et l'unité de distance (km / miles).",             padding: 6 },
 ];
 
-const PAGE_INFO: Record<Tab, { emoji: string; name: string; color: string }> = {
-  home:     { emoji: '🏠', name: 'Accueil',  color: '#10B981' },
-  team:     { emoji: '👥', name: 'Équipe',   color: '#8B5CF6' },
-  map:      { emoji: '🗺️', name: 'Carte',    color: '#1A6FD6' },
-  settings: { emoji: '⚙️', name: 'Réglages', color: '#F59E0B' },
+const PAGE_INFO: Record<Tab, { Icon: React.ComponentType<{ size?: number }>; name: string; color: string }> = {
+  home:     { Icon: Home, name: 'Accueil',  color: '#10B981' },
+  team:     { Icon: Users, name: 'Équipe',   color: '#8B5CF6' },
+  map:      { Icon: MapIcon, name: 'Carte',    color: '#1A6FD6' },
+  settings: { Icon: Settings, name: 'Réglages', color: '#F59E0B' },
 };
 
 /* ─── Spotlight rect helper ──────────────────────────────── */
@@ -244,7 +245,7 @@ export default function DemoTutorialOverlay() {
             </div>
 
             {/* Logo */}
-            <div style={{ fontSize: 52, marginBottom: 16 }}>🚪</div>
+            <div style={{ display: 'flex', justifyContent: 'center', color: '#3B82F6', marginBottom: 16 }}><DoorOpen size={52} /></div>
 
             <h1 style={{ fontSize: 24, fontWeight: 900, color: '#fff', textAlign: 'center', margin: '0 0 10px', letterSpacing: -0.5 }}>
               Bienvenue dans <span style={{ color: '#3B82F6' }}>KnockAI</span>!
@@ -299,7 +300,7 @@ export default function DemoTutorialOverlay() {
             boxShadow: `0 0 60px ${PAGE_INFO[pageTransition].color}33`,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
           }}>
-            <div style={{ fontSize: 44 }}>{PAGE_INFO[pageTransition].emoji}</div>
+            <div style={{ display: 'flex', color: PAGE_INFO[pageTransition].color }}>{(() => { const Icon = PAGE_INFO[pageTransition].Icon; return <Icon size={44} />; })()}</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{PAGE_INFO[pageTransition].name}</div>
             <div style={{ fontSize: 12, color: PAGE_INFO[pageTransition].color, fontWeight: 700, letterSpacing: 1 }}>ON EXPLORE...</div>
           </div>
@@ -349,10 +350,10 @@ export default function DemoTutorialOverlay() {
               position: 'fixed',
               left: cX - 16,
               top: isTop ? spotlight.top + spotlight.height + 4 : spotlight.top - 32,
-              fontSize: 22, zIndex: 99992, pointerEvents: 'none',
+              color: '#63B3ED', zIndex: 99992, pointerEvents: 'none',
               animation: isTop ? 'kt-bounce-down 0.85s ease-in-out infinite' : 'kt-bounce-up 0.85s ease-in-out infinite',
             }}>
-              {isTop ? '👇' : '👆'}
+              {isTop ? <ArrowDown size={22} /> : <ArrowUp size={22} />}
             </div>
 
             {/* Tooltip card */}
@@ -381,8 +382,9 @@ export default function DemoTutorialOverlay() {
                     border: `1px solid ${PAGE_INFO[currentStep.tab].color}44`,
                     fontSize: 10, fontWeight: 800, color: PAGE_INFO[currentStep.tab].color,
                     letterSpacing: 0.8, textTransform: 'uppercase',
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
                   }}>
-                    {PAGE_INFO[currentStep.tab].emoji} {PAGE_INFO[currentStep.tab].name}
+                    {(() => { const Icon = PAGE_INFO[currentStep.tab].Icon; return <Icon size={11} />; })()} {PAGE_INFO[currentStep.tab].name}
                   </div>
                   <div style={{ flex: 1 }} />
                   <div style={{ fontSize: 10, color: '#4B5563', fontWeight: 600 }}>
@@ -470,7 +472,7 @@ export default function DemoTutorialOverlay() {
             boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
           }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+            <div style={{ display: 'flex', justifyContent: 'center', color: '#10B981', marginBottom: 16 }}><PartyPopper size={56} /></div>
             <h2 style={{ fontSize: 22, fontWeight: 900, color: '#fff', textAlign: 'center', margin: '0 0 10px' }}>
               Tu connais maintenant toute l&apos;app!
             </h2>

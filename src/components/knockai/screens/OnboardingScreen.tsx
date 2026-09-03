@@ -1,24 +1,25 @@
 'use client';
 import { useState } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
+import { MapPinned, Map as MapIcon, BarChart3 } from 'lucide-react';
 
 const slides = [
   {
-    icon: '🤖',
-    title: 'Assistant IA invisible',
-    desc: "KnockAI détecte automatiquement quand tu passes devant une maison et place un lead pour toi — même si tu es en pleine conversation.",
-    bullets: ['Détecte ta position en temps réel', 'Crée les leads automatiquement', 'Tu gardes le contrôle final'],
+    icon: MapPinned,
+    title: 'Chaque porte, en 2 taps',
+    desc: "Note le résultat de chaque porte en temps réel — vente, rappel, pas intéressé. Ta position GPS et l'heure sont enregistrées automatiquement, tu n'as qu'à choisir le résultat.",
+    bullets: ['Un pin = un résultat, en quelques secondes', 'Adresse et position remplies automatiquement', 'Historique complet et exportable'],
     color: '#0066CC',
   },
   {
-    icon: '🗺️',
+    icon: MapIcon,
     title: 'Carte intelligente en temps réel',
     desc: "La carte devient un outil vivant. Elle montre exactement quelles maisons ont été approchées.",
     bullets: ['Tes coéquipiers visibles en direct', 'Zéro double-knock', "Zones couvertes d'un coup d'œil"],
     color: '#8B5CF6',
   },
   {
-    icon: '📊',
+    icon: BarChart3,
     title: 'Données précises = plus de ventes',
     desc: "Doors knocked, ventes, temps travaillé, sales/heure — tout est mesuré pour améliorer ta performance.",
     bullets: ['Suivi automatique de chaque shift', 'Historique par date', "Stats d'équipe en temps réel"],
@@ -40,11 +41,11 @@ export default function OnboardingScreen() {
   return (
     <div style={{ flex: 1, height: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #0D2B55 0%, #1E1E2E 100%)' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px' }}>
-        <button onClick={() => setAuthScreen('login')} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 14, cursor: 'pointer' }}>Skip</button>
+        <button onClick={() => setAuthScreen('login')} style={{ background: 'none', border: 'none', color: '#8B92A5', fontSize: 14, cursor: 'pointer' }}>Skip</button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>{slide.icon}</div>
+        <div style={{ display: 'flex', color: slide.color, marginBottom: 16 }}><slide.icon size={64} /></div>
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 10, color: '#fff' }}>{slide.title}</h2>
         <p style={{ fontSize: 14, color: '#9CA3AF', lineHeight: 1.6, maxWidth: 300, marginBottom: 16 }}>{slide.desc}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 280 }}>

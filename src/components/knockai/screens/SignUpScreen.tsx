@@ -53,7 +53,7 @@ export default function SignUpScreen() {
         </div>
         {error && <p style={{ color: '#EF4444', fontSize: 14, marginBottom: 12 }}>{error}</p>}
         <button onClick={handle} disabled={loading} style={btnStyle}>{loading ? 'Creating Account...' : 'Create Account'}</button>
-        <div style={{ textAlign: 'center', marginTop: 20, color: '#6B7280', fontSize: 14 }}>
+        <div style={{ textAlign: 'center', marginTop: 20, color: '#8B92A5', fontSize: 14 }}>
           Already have an account?{' '}
           <button onClick={() => setAuthScreen('login')} style={{ background: 'none', border: 'none', color: '#1A6FD6', fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>Sign In</button>
         </div>

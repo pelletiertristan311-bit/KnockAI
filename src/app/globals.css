@@ -34,3 +34,10 @@ input, textarea, select {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.3); border-radius: 2px; }
+
+/* Spinning loading icon (lucide-react icons, e.g. Loader2) */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

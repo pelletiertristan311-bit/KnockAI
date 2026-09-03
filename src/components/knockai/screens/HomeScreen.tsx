@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useKnockAIStore } from '@/lib/knockai/store';
 import { reverseGeocode } from '@/lib/knockai/geocode';
+import { MapPin, Clock, DoorOpen, DollarSign, Target, Phone, Check, Loader2, Map as MapIcon, BarChart3, Users, Bot } from 'lucide-react';
 
 function formatTime(seconds: number) {
   const h = Math.floor(seconds / 3600);
@@ -20,7 +21,7 @@ const MOTIVATIONAL_MESSAGES = [
 ];
 
 const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6' };
-const PIN_ICONS: Record<string, string> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: '🤖' };
+const PIN_ICONS: Record<string, React.ReactNode> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: <Bot size={16} /> };
 const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'Call Back', ai_knocked: 'AI Knocked' };
 
 export default function HomeScreen() {
@@ -103,10 +104,10 @@ export default function HomeScreen() {
   };
 
   const quickActions = [
-    { label: 'Add Pin', icon: '📍', action: () => openAddPinModal() },
-    { label: 'Go to Map', icon: '🗺️', action: () => setActiveTab('map') },
-    { label: 'View Stats', icon: '📊', action: () => goToSettings('stats') },
-    { label: 'Team', icon: '👥', action: () => setActiveTab('team') },
+    { label: 'Add Pin', icon: <MapPin size={22} />, action: () => openAddPinModal() },
+    { label: 'Go to Map', icon: <MapIcon size={22} />, action: () => setActiveTab('map') },
+    { label: 'View Stats', icon: <BarChart3 size={22} />, action: () => goToSettings('stats') },
+    { label: 'Team', icon: <Users size={22} />, action: () => setActiveTab('team') },
   ];
 
   return (
@@ -145,26 +146,26 @@ export default function HomeScreen() {
               </div>
             </div>
           </button>
-          {isClockedIn && startTimeLabel && <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280', marginTop: 6 }}>{startTimeLabel}</div>}
+          {isClockedIn && startTimeLabel && <div style={{ textAlign: 'center', fontSize: 12, color: '#8B92A5', marginTop: 6 }}>{startTimeLabel}</div>}
           {!isClockedIn && team && (
-            <div style={{ textAlign: 'center', fontSize: 11, color: '#6B7280', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-              <span>📍</span> Your location will be shared with your team while clocked in
+            <div style={{ textAlign: 'center', fontSize: 11, color: '#8B92A5', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+              <MapPin size={12} /> Your location will be shared with your team while clocked in
             </div>
           )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }} data-tour="home-stats">
-          <StatCard icon="⏱" label="Time Worked" value={formatTime(timeWorkedToday)} color="#0D2B55" />
-          <StatCard icon="🚪" label="Doors Knocked" value={String(todayPins.length)} color="#8B5CF6" />
-          <StatCard icon="💰" label="Sales Made" value={String(todaySales)} color="#10B981" />
-          <StatCard icon="🎯" label="Sales/hr" value={salesPerHour} color="#EF4444" />
+          <StatCard icon={<Clock size={22} />} label="Time Worked" value={formatTime(timeWorkedToday)} color="#0D2B55" />
+          <StatCard icon={<DoorOpen size={22} />} label="Doors Knocked" value={String(todayPins.length)} color="#8B5CF6" />
+          <StatCard icon={<DollarSign size={22} />} label="Sales Made" value={String(todaySales)} color="#10B981" />
+          <StatCard icon={<Target size={22} />} label="Sales/hr" value={salesPerHour} color="#EF4444" />
         </div>
 
         <h3 style={{ fontWeight: 700, marginBottom: 12, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 }}>Quick Pin</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
           {([
-            { type: 'call_back' as const, label: 'Call Back', icon: '📞', color: '#F59E0B', glow: 'rgba(245,158,11,0.35)' },
-            { type: 'sale' as const, label: 'Sale', icon: '💰', color: '#10B981', glow: 'rgba(16,185,129,0.35)' },
+            { type: 'call_back' as const, label: 'Call Back', icon: <Phone size={26} />, color: '#F59E0B', glow: 'rgba(245,158,11,0.35)' },
+            { type: 'sale' as const, label: 'Sale', icon: <DollarSign size={26} />, color: '#10B981', glow: 'rgba(16,185,129,0.35)' },
           ] as const).map(({ type, label, icon, color, glow }) => {
             const isLoading = quickPinLoading === type;
             const isDone = quickPinFeedback === type;
@@ -175,7 +176,7 @@ export default function HomeScreen() {
                 disabled={!!quickPinLoading}
                 style={{ padding: '18px 12px', borderRadius: 16, border: `1.5px solid ${color}55`, background: isDone ? `${color}22` : `${color}14`, color: '#fff', cursor: quickPinLoading ? 'not-allowed' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, boxShadow: isDone ? `0 0 18px ${glow}` : 'none', transition: 'all 0.25s', opacity: quickPinLoading && !isLoading ? 0.5 : 1 }}
               >
-                <span style={{ fontSize: 28 }}>{isDone ? '✅' : isLoading ? '⏳' : icon}</span>
+                <span style={{ display: 'flex' }}>{isDone ? <Check size={28} /> : isLoading ? <Loader2 size={28} className="spin" /> : icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color }}>{isDone ? 'Ajouté !' : isLoading ? 'GPS...' : label}</span>
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Tap → pin ici</span>
               </button>
@@ -187,7 +188,7 @@ export default function HomeScreen() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }} data-tour="home-quick">
           {quickActions.map(({ label, icon, action }) => (
             <button key={label} onClick={action} style={{ padding: '16px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 22 }}>{icon}</span>
+              <span style={{ display: 'flex' }}>{icon}</span>
               <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
             </button>
           ))}
@@ -198,8 +199,8 @@ export default function HomeScreen() {
             <span style={{ fontSize: 13, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 }}>Objectifs du jour</span>
             <button onClick={() => setShowGoalEditor(true)} style={{ fontSize: 11, color: '#1A6FD6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Modifier</button>
           </div>
-          <GoalBar label="Portes" current={doorsToday} target={dailyGoals.doors} color="#8B5CF6" icon="🚪" />
-          <GoalBar label="Ventes" current={salesToday} target={dailyGoals.sales} color="#10B981" icon="💰" />
+          <GoalBar label="Portes" current={doorsToday} target={dailyGoals.doors} color="#8B5CF6" icon={<DoorOpen size={14} />} />
+          <GoalBar label="Ventes" current={salesToday} target={dailyGoals.sales} color="#10B981" icon={<DollarSign size={14} />} />
           {doorsToday >= dailyGoals.doors && salesToday >= dailyGoals.sales && dailyGoals.doors > 0 && (
             <div style={{ textAlign: 'center', padding: '12px', borderRadius: 12, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', marginTop: 8, fontSize: 13, fontWeight: 700, color: '#10B981' }}>
               🎉 Objectifs atteints ! Excellent travail !
@@ -219,7 +220,7 @@ export default function HomeScreen() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{pin.leadName || pin.address}</div>
-                  <div style={{ fontSize: 12, color: '#6B7280' }}>{new Date(pin.placedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div style={{ fontSize: 12, color: '#8B92A5' }}>{new Date(pin.placedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
                 <div style={{ fontSize: 12, color: PIN_COLORS[pin.type], fontWeight: 600 }}>{PIN_LABELS[pin.type]}</div>
               </button>
@@ -233,8 +234,8 @@ export default function HomeScreen() {
           <div style={{ width: '100%', maxWidth: 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: '20px 20px 40px' }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 20px' }} />
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20 }}>Objectifs du jour</div>
-            <GoalInput label="🚪 Objectif portes" value={dailyGoals.doors} onChange={v => setDailyGoals({ ...dailyGoals, doors: v })} />
-            <GoalInput label="💰 Objectif ventes" value={dailyGoals.sales} onChange={v => setDailyGoals({ ...dailyGoals, sales: v })} />
+            <GoalInput label="Objectif portes" icon={<DoorOpen size={16} />} value={dailyGoals.doors} onChange={v => setDailyGoals({ ...dailyGoals, doors: v })} />
+            <GoalInput label="Objectif ventes" icon={<DollarSign size={16} />} value={dailyGoals.sales} onChange={v => setDailyGoals({ ...dailyGoals, sales: v })} />
             <button onClick={() => setShowGoalEditor(false)} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(90deg,#1A6FD6,#00B4D8)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginTop: 8 }}>Enregistrer</button>
           </div>
         </div>
@@ -243,10 +244,10 @@ export default function HomeScreen() {
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
     <div style={{ padding: '16px', borderRadius: 16, background: `${color}cc`, border: '1px solid rgba(255,255,255,0.08)' }}>
-      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ marginBottom: 8 }}>{icon}</div>
       <div style={{ fontSize: 22, fontWeight: 800 }}>{value}</div>
       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{label}</div>
     </div>
@@ -257,19 +258,19 @@ function EmptyState() {
   const { setActiveTab } = useKnockAIStore();
   return (
     <div style={{ textAlign: 'center', padding: '32px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>📍</div>
+      <div style={{ display: 'flex', justifyContent: 'center', color: '#8B92A5', marginBottom: 12 }}><MapPin size={40} /></div>
       <p style={{ color: '#9CA3AF', fontSize: 15, marginBottom: 16 }}>No pins yet today. Drop your first pin on the map!</p>
       <button onClick={() => setActiveTab('map')} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#1A6FD6', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Open Map</button>
     </div>
   );
 }
 
-function GoalBar({ label, current, target, color, icon }: { label: string; current: number; target: number; color: string; icon: string }) {
+function GoalBar({ label, current, target, color, icon }: { label: string; current: number; target: number; color: string; icon: React.ReactNode }) {
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 13, color: '#D1D5DB' }}>{icon} {label}</span>
+        <span style={{ fontSize: 13, color: '#D1D5DB', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {label}</span>
         <span style={{ fontSize: 13, fontWeight: 700, color }}>{current} / {target}</span>
       </div>
       <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
@@ -279,10 +280,10 @@ function GoalBar({ label, current, target, color, icon }: { label: string; curre
   );
 }
 
-function GoalInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function GoalInput({ label, icon, value, onChange }: { label: string; icon: React.ReactNode; value: number; onChange: (v: number) => void }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>{icon} {label}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => onChange(Math.max(0, value - 1))} style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 20, cursor: 'pointer' }}>−</button>
         <span style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 800 }}>{value}</span>

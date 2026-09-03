@@ -44,7 +44,7 @@ export default function LoginScreen() {
 
         <button onClick={handleLogin} disabled={loading} style={btnStyle}>{loading ? 'Signing in...' : 'Sign In'}</button>
 
-        <div style={{ textAlign: 'center', marginTop: 24, color: '#6B7280', fontSize: 14 }}>
+        <div style={{ textAlign: 'center', marginTop: 24, color: '#8B92A5', fontSize: 14 }}>
           Don&apos;t have an account?{' '}
           <button onClick={() => setAuthScreen('signup')} style={{ background: 'none', border: 'none', color: '#1A6FD6', fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>Sign Up</button>
         </div>

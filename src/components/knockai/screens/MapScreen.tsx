@@ -4,6 +4,10 @@ import { useKnockAIStore, Pin, PinType, type TeamDrawing, type TeamSign, type Li
 import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
 import { reverseGeocode } from '@/lib/knockai/geocode';
 import { cachedFetch } from '@/lib/knockai/geocodeCache';
+import {
+  Map as MapIcon, Search, ClipboardList, Eraser, Pencil, Signpost, Lock, Bot,
+  User, Users, Crosshair, Trash2, Navigation,
+} from 'lucide-react';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -760,7 +764,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
 
       {mapError && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0D2B55 0%, #1E1E2E 100%)', padding: 24, gap: 16 }}>
-          <div style={{ fontSize: 48 }}>🗺️</div>
+          <div style={{ display: 'flex', color: '#8B92A5' }}><MapIcon size={48} /></div>
           <p style={{ color: '#9CA3AF', textAlign: 'center' }}>Map unavailable. Showing pin list.</p>
           <div style={{ width: '100%', maxHeight: 300, overflowY: 'auto' }}>
             {pins.map((pin) => (
@@ -804,16 +808,16 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
 
       {/* Right controls */}
       <div style={{ position: 'absolute', top: 88, right: 12, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 10 }}>
-        <MapBtn onClick={() => setShowSearch(!showSearch)}>🔍</MapBtn>
+        <MapBtn onClick={() => setShowSearch(!showSearch)}><Search size={18} /></MapBtn>
         <MapBtn onClick={() => mapInstance.current?.zoomIn()}>+</MapBtn>
         <MapBtn onClick={() => mapInstance.current?.zoomOut()}>−</MapBtn>
-        <MapBtn onClick={() => { setRouteLockedMsg(''); setShowRouteModal(true); }}>🗺</MapBtn>
-        <button onClick={() => setShowRoutesList(!showRoutesList)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${showRoutesList ? 'rgba(139,92,246,0.5)' : 'rgba(0,102,204,0.2)'}`, background: showRoutesList ? 'rgba(139,92,246,0.15)' : 'rgba(13,43,85,0.9)', color: showRoutesList ? '#8B5CF6' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', fontSize: 18 }}>📋</button>
+        <MapBtn onClick={() => { setRouteLockedMsg(''); setShowRouteModal(true); }}><MapIcon size={18} /></MapBtn>
+        <button onClick={() => setShowRoutesList(!showRoutesList)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${showRoutesList ? 'rgba(139,92,246,0.5)' : 'rgba(0,102,204,0.2)'}`, background: showRoutesList ? 'rgba(139,92,246,0.15)' : 'rgba(13,43,85,0.9)', color: showRoutesList ? '#8B5CF6' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}><ClipboardList size={18} /></button>
 
         {/* Tracer button + panel (drawing + eraser) */}
         <div style={{ position: 'relative' }}>
           <button onClick={handleTracerToggle} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isTracerActive ? 'rgba(59,130,246,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isTracerActive ? 'rgba(59,130,246,0.25)' : 'rgba(13,43,85,0.9)', color: isTracerActive ? '#3B82F6' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)' }}>
-            <span style={{ fontSize: 14 }}>{isDrawingErasing ? '🧹' : '✏️'}</span>
+            {isDrawingErasing ? <Eraser size={14} /> : <Pencil size={14} />}
             <span style={{ fontSize: 7, fontWeight: 700 }}>Trace GPS</span>
           </button>
 
@@ -824,7 +828,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
                 <button key={color} onClick={() => switchToDrawing(color)} style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: isStreetDrawing && drawingColor === color ? '3px solid white' : '2px solid rgba(255,255,255,0.3)', cursor: 'pointer', flexShrink: 0, opacity: isDrawingErasing ? 0.5 : 1 }} />
               ))}
               <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '2px 0' }} />
-              <button onClick={toggleDrawingEraser} title="Gomme" style={{ width: 28, height: 28, borderRadius: 8, border: isDrawingErasing ? '2px solid #F59E0B' : '1px solid rgba(255,255,255,0.25)', background: isDrawingErasing ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)', color: '#fff', cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>🧹</button>
+              <button onClick={toggleDrawingEraser} title="Gomme" style={{ width: 28, height: 28, borderRadius: 8, border: isDrawingErasing ? '2px solid #F59E0B' : '1px solid rgba(255,255,255,0.25)', background: isDrawingErasing ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Eraser size={15} /></button>
             </div>
           )}
         </div>
@@ -832,8 +836,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         {/* Signs mode button — managers/owners only can place; everyone sees the list */}
         <div style={{ position: 'relative' }}>
           <button onClick={isManagerOrOwner ? handleSignsToggle : undefined} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isSignsMode ? 'rgba(0,191,255,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isSignsMode ? 'rgba(0,191,255,0.18)' : 'rgba(13,43,85,0.9)', color: isSignsMode ? '#00BFFF' : isManagerOrOwner ? '#fff' : '#4B5563', cursor: isManagerOrOwner ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', boxShadow: isSignsMode ? '0 0 10px rgba(0,191,255,0.3)' : 'none', opacity: isManagerOrOwner ? 1 : 0.55 }}>
-            <span style={{ fontSize: 14 }}>🪧</span>
-            <span style={{ fontSize: 7, fontWeight: 700 }}>{isManagerOrOwner ? 'Signs' : '🔒'}</span>
+            <Signpost size={14} />
+            <span style={{ fontSize: 7, fontWeight: 700, display: 'flex' }}>{isManagerOrOwner ? 'Signs' : <Lock size={9} />}</span>
           </button>
           {isSignsMode && (
             <div style={{ position: 'absolute', right: 48, top: 0, padding: '8px 12px', borderRadius: 12, background: 'rgba(13,43,85,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,191,255,0.35)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', whiteSpace: 'nowrap' }}>
@@ -844,7 +848,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
 
         {/* Signs list button — visible to everyone */}
         <button onClick={() => setShowSignsList(!showSignsList)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${showSignsList ? 'rgba(0,191,255,0.5)' : 'rgba(0,102,204,0.2)'}`, background: showSignsList ? 'rgba(0,191,255,0.15)' : 'rgba(13,43,85,0.9)', color: showSignsList ? '#00BFFF' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', fontSize: 16 }}>
-          <span style={{ fontSize: 14 }}>🚏</span>
+          <Signpost size={14} />
           <span style={{ fontSize: 7, fontWeight: 700 }}>List</span>
         </button>
       </div>
@@ -852,7 +856,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       {/* AI toggle */}
       <div data-tour="map-ai" style={{ position: 'absolute', bottom: 24, right: 12, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         <button onClick={toggleAI} style={{ width: 56, height: 56, borderRadius: 28, border: 'none', cursor: 'pointer', background: aiEnabled ? '#3B82F6' : '#374151', color: '#fff', boxShadow: aiEnabled ? '0 4px 16px rgba(0,102,204,0.5)' : 'none', transition: 'all 0.3s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          <span style={{ fontSize: 16 }}>🤖</span>
+          <Bot size={16} />
           <span style={{ fontSize: 9, fontWeight: 800 }}>{aiEnabled ? 'AI ON' : 'AI OFF'}</span>
         </button>
       </div>
@@ -878,17 +882,17 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               <label style={{ display: 'block', color: '#9CA3AF', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>Route Type</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button onClick={() => { setRouteType('individual'); setRouteLockedMsg(''); }} style={{ padding: '14px 16px', borderRadius: 12, border: `2px solid ${routeType === 'individual' ? '#1A6FD6' : 'rgba(255,255,255,0.08)'}`, background: routeType === 'individual' ? 'rgba(26,111,214,0.2)' : 'rgba(255,255,255,0.03)', color: routeType === 'individual' ? '#1A6FD6' : '#fff', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>🧍 Individual Route</div>
-                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Only visible to you</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}><User size={16} /> Individual Route</div>
+                  <div style={{ fontSize: 12, color: '#8B92A5', marginTop: 2 }}>Only visible to you</div>
                 </button>
                 <button onClick={() => { if (!isManagerOrOwner) { setRouteLockedMsg('Only owners and managers can create team routes.'); } else { setRouteType('team'); setRouteLockedMsg(''); } }} style={{ padding: '14px 16px', borderRadius: 12, border: `2px solid ${routeType === 'team' ? '#8B5CF6' : 'rgba(255,255,255,0.08)'}`, background: routeType === 'team' ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.03)', color: isManagerOrOwner ? (routeType === 'team' ? '#8B5CF6' : '#fff') : '#4B5563', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>👥 Team Route {!isManagerOrOwner && '🔒'}</div>
-                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Visible to all team members</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16} /> Team Route {!isManagerOrOwner && <Lock size={13} />}</div>
+                  <div style={{ fontSize: 12, color: '#8B92A5', marginTop: 2 }}>Visible to all team members</div>
                 </button>
                 {routeLockedMsg && <p style={{ color: '#F59E0B', fontSize: 13, margin: 0 }}>{routeLockedMsg}</p>}
               </div>
             </div>
-            <button onClick={startDrawing} disabled={!routeName.trim()} style={{ width: '100%', padding: '15px', borderRadius: 12, border: 'none', cursor: routeName.trim() ? 'pointer' : 'default', background: routeName.trim() ? 'linear-gradient(90deg, #8B5CF6, #6D28D9)' : '#374151', color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 10 }}>✏️ Draw on Map</button>
+            <button onClick={startDrawing} disabled={!routeName.trim()} style={{ width: '100%', padding: '15px', borderRadius: 12, border: 'none', cursor: routeName.trim() ? 'pointer' : 'default', background: routeName.trim() ? 'linear-gradient(90deg, #8B5CF6, #6D28D9)' : '#374151', color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Pencil size={16} /> Draw on Map</button>
             <button onClick={() => setShowRouteModal(false)} style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 15 }}>Cancel</button>
           </div>
         </div>
@@ -899,7 +903,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         <>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(37,99,235,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>✏️ Trace GPS active</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Pencil size={14} /> Trace GPS active</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>{streetDrawingPoints.length < 2 ? `${streetDrawingPoints.length}/2 points min` : `${streetDrawingPoints.length} points · double-clic pour terminer`}</div>
             </div>
             <button onClick={cancelStreetDrawing} style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Annuler</button>
@@ -916,7 +920,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       {isSignsMode && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(0,148,200,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>🪧 Signs mode — tap to drop</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Signpost size={14} /> Signs mode — tap to drop</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>Tap anywhere on the map to place a sign marker</div>
           </div>
           <button onClick={() => setIsSignsMode(false)} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>Done</button>
@@ -927,7 +931,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       {isDrawingErasing && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(245,158,11,0.96)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#000' }}>🧹 Mode gomme actif</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#000', display: 'flex', alignItems: 'center', gap: 6 }}><Eraser size={14} /> Mode gomme actif</div>
             <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.65)', marginTop: 1 }}>Glisse le doigt sur les tracés pour les effacer</div>
           </div>
           <button onClick={exitErasing} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'rgba(0,0,0,0.2)', color: '#000', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>Terminer</button>
@@ -958,30 +962,30 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowRoutesList(false)}>
           <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: '16px 20px 40px', maxHeight: '75vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>📋 Mes Routes ({routes.length})</div>
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><ClipboardList size={18} /> Mes Routes ({routes.length})</div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {routes.length === 0 ? (
-                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>Aucune route. Dessine avec 🗺</p>
+                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>Aucune route. Dessine avec <MapIcon size={16} /></p>
               ) : routes.map((route) => {
                 const canDelete = route.userId === user?.id || isManagerOrOwner;
                 const isConfirming = routeToDelete === route.id;
                 const pts = route.polygon || [];
                 return (
                   <div key={route.id} style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                    <span style={{ fontSize: 20 }}>{route.type === 'team' ? '👥' : '🧍'}</span>
+                    <span style={{ display: 'flex', color: '#8B92A5' }}>{route.type === 'team' ? <Users size={20} /> : <User size={20} />}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{route.name}</div>
-                      <div style={{ fontSize: 11, color: '#6B7280' }}>{new Date(route.createdAt).toLocaleDateString()} · {pts.length} points</div>
+                      <div style={{ fontSize: 11, color: '#8B92A5' }}>{new Date(route.createdAt).toLocaleDateString()} · {pts.length} points</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => { if (pts.length > 0 && mapInstance.current) { const [lng, lat] = pts[Math.floor(pts.length / 2)]; mapInstance.current.flyTo({ center: [lng, lat], zoom: 15, duration: 1000 }); } setShowRoutesList(false); }} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'rgba(26,111,214,0.2)', color: '#1A6FD6', cursor: 'pointer', fontSize: 14 }}>🎯</button>
+                      <button onClick={() => { if (pts.length > 0 && mapInstance.current) { const [lng, lat] = pts[Math.floor(pts.length / 2)]; mapInstance.current.flyTo({ center: [lng, lat], zoom: 15, duration: 1000 }); } setShowRoutesList(false); }} aria-label="Fly to" style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'rgba(26,111,214,0.2)', color: '#1A6FD6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Crosshair size={16} /></button>
                       {canDelete && (isConfirming ? (
                         <div style={{ display: 'flex', gap: 4 }}>
                           <button onClick={() => { deleteRoute(route.id); setRouteToDelete(null); }} style={{ padding: '4px 10px', borderRadius: 8, border: 'none', background: '#EF4444', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Oui</button>
                           <button onClick={() => setRouteToDelete(null)} style={{ padding: '4px 10px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.1)', color: '#9CA3AF', cursor: 'pointer', fontSize: 12 }}>Non</button>
                         </div>
                       ) : (
-                        <button onClick={() => setRouteToDelete(route.id)} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'rgba(239,68,68,0.15)', color: '#EF4444', cursor: 'pointer', fontSize: 14 }}>🗑</button>
+                        <button onClick={() => setRouteToDelete(route.id)} aria-label="Delete route" style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'rgba(239,68,68,0.15)', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>
                       ))}
                     </div>
                   </div>
@@ -998,10 +1002,10 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           <div style={{ width: '100%', maxWidth: 340, background: '#0D2B55', borderRadius: 20, padding: '24px 20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 22 }}>🪧</span>
+                <Signpost size={22} color="#00BFFF" />
                 <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#00BFFF' }}>New Sign</h2>
               </div>
-              <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
+              <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} aria-label="Close" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', color: '#9CA3AF', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Label or note (optional)</label>
@@ -1022,7 +1026,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
                 Save Sign
               </button>
             ) : (
-              <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', color: '#4B5563', fontSize: 14, textAlign: 'center', marginBottom: 8 }}>🔒 Only managers and owners can place signs</div>
+              <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', color: '#4B5563', fontSize: 14, textAlign: 'center', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Lock size={14} /> Only managers and owners can place signs</div>
             )}
             <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.07)', color: '#9CA3AF', fontSize: 14 }}>Cancel</button>
           </div>
@@ -1034,25 +1038,25 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={() => setSelectedSign(null)}>
           <div style={{ width: '100%', maxWidth: 320, background: '#0D2B55', borderRadius: 20, padding: '22px 20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <span style={{ fontSize: 28 }}>🪧</span>
+              <Signpost size={28} color="#00BFFF" />
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#00BFFF' }}>{selectedSign.label || 'Sign'}</div>
-                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{new Date(selectedSign.createdAt).toLocaleDateString()} · {selectedSign.lat.toFixed(5)}, {selectedSign.lng.toFixed(5)}</div>
+                <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>{new Date(selectedSign.createdAt).toLocaleDateString()} · {selectedSign.lat.toFixed(5)}, {selectedSign.lng.toFixed(5)}</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => { mapInstance.current?.flyTo({ center: [selectedSign.lng, selectedSign.lat], zoom: 17, duration: 800 }); setSelectedSign(null); }}
-                style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', fontSize: 14, fontWeight: 700 }}
+                style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
-                🎯 Fly to
+                <Crosshair size={15} /> Fly to
               </button>
               {isManagerOrOwner && (
                 <button
                   onClick={() => { deleteSignById(selectedSign.id); setSelectedSign(null); }}
-                  style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(239,68,68,0.15)', color: '#EF4444', fontSize: 14, fontWeight: 700 }}
+                  style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(239,68,68,0.15)', color: '#EF4444', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  🗑 Delete
+                  <Trash2 size={15} /> Delete
                 </button>
               )}
             </div>
@@ -1066,20 +1070,20 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowSignsList(false)}>
           <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: '16px 20px 40px', maxHeight: '75vh', display: 'flex', flexDirection: 'column', border: '1px solid rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#00BFFF' }}>🚏 Signs ({signs.length})</div>
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#00BFFF', display: 'flex', alignItems: 'center', gap: 8 }}><Signpost size={18} /> Signs ({signs.length})</div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {signs.length === 0 ? (
-                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>No signs yet. Tap 🪧 to enter Signs mode and drop one.</p>
+                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>No signs yet. Tap <Signpost size={16} /> to enter Signs mode and drop one.</p>
               ) : signs.map((sign) => (
                 <div key={sign.id} style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(0,191,255,0.06)', border: '1px solid rgba(0,191,255,0.15)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>🪧</span>
+                  <span style={{ display: 'flex', flexShrink: 0, color: '#00BFFF' }}><Signpost size={20} /></span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sign.label || 'Sign'}</div>
-                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{new Date(sign.createdAt).toLocaleDateString()}</div>
+                    <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>{new Date(sign.createdAt).toLocaleDateString()}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => { mapInstance.current?.flyTo({ center: [sign.lng, sign.lat], zoom: 17, duration: 800 }); setShowSignsList(false); }} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', cursor: 'pointer', fontSize: 14 }}>🎯</button>
-                    {isManagerOrOwner && <button onClick={() => { deleteSignById(sign.id); }} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'rgba(239,68,68,0.12)', color: '#EF4444', cursor: 'pointer', fontSize: 14 }}>🗑</button>}
+                    <button onClick={() => { mapInstance.current?.flyTo({ center: [sign.lng, sign.lat], zoom: 17, duration: 800 }); setShowSignsList(false); }} aria-label="Fly to" style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Crosshair size={16} /></button>
+                    {isManagerOrOwner && <button onClick={() => { deleteSignById(sign.id); }} aria-label="Delete sign" style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'rgba(239,68,68,0.12)', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>}
                   </div>
                 </div>
               ))}
@@ -1161,9 +1165,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   onClick={() => { mapInstance.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 17, duration: 800 }); setSelectedLiveLoc(null); setLiveLocAddress(null); }}
-                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(0,191,255,0.12)', color: '#00BFFF', fontSize: 14, fontWeight: 700 }}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(0,191,255,0.12)', color: '#00BFFF', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  🎯 Fly to
+                  <Crosshair size={15} /> Fly to
                 </button>
                 <a
                   href={mapsUrl}
@@ -1171,7 +1175,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
                   rel="noopener noreferrer"
                   style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #0094C8, #00BFFF)', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  🧭 Navigate
+                  <Navigation size={15} /> Navigate
                 </a>
               </div>
               <button onClick={() => { setSelectedLiveLoc(null); setLiveLocAddress(null); }} style={{ width: '100%', marginTop: 8, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', fontSize: 13 }}>Close</button>

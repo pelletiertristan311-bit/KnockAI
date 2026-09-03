@@ -7,6 +7,7 @@ import { useTeamSigns } from '@/hooks/knockai/useTeamSigns';
 import { useLiveLocation } from '@/hooks/knockai/useLiveLocation';
 import { useTeamLocations } from '@/hooks/knockai/useTeamLocations';
 import { useTeamBroadcasts, type TeamToast } from '@/hooks/knockai/useTeamBroadcasts';
+import { WifiOff } from 'lucide-react';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -121,7 +122,7 @@ export default function KnockAIApp() {
 
   const TOAST_CONFIG: Record<TeamToast['type'], { borderColor: string; label: (name: string, address?: string) => string; sub: string }> = {
     clock_in:  { borderColor: '#00BFFF', label: (n) => `${n} clocked in 🟢`,    sub: 'Now active on the map' },
-    clock_out: { borderColor: '#6B7280', label: (n) => `${n} clocked out 🔴`,   sub: 'No longer visible on map' },
+    clock_out: { borderColor: '#8B92A5', label: (n) => `${n} clocked out 🔴`,   sub: 'No longer visible on map' },
     sale:      { borderColor: '#22c55e', label: (n) => `💰 ${n} just made a sale!`, sub: 'New sale recorded' },
   };
 
@@ -147,7 +148,7 @@ export default function KnockAIApp() {
                   <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cfg.label(t.userName, t.address)}</div>
                   <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>{subText}</div>
                 </div>
-                <button onClick={() => setTeamToasts((p) => p.filter((x) => x.id !== t.id))} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>✕</button>
+                <button onClick={() => setTeamToasts((p) => p.filter((x) => x.id !== t.id))} style={{ background: 'none', border: 'none', color: '#8B92A5', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>✕</button>
               </div>
             );
           })}
@@ -156,7 +157,7 @@ export default function KnockAIApp() {
 
       {!isOnline && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999, background: '#374151', color: '#fff', textAlign: 'center', padding: '8px 16px', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <span>📵</span> Mode hors-ligne — les données sont sauvegardées localement
+          <WifiOff size={14} /> Mode hors-ligne — les données sont sauvegardées localement
         </div>
       )}
     </>

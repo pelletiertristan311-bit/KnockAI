@@ -2,6 +2,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useKnockAIStore, UserRole, PinType, TrashedPin, TrashedTeam } from '@/lib/knockai/store';
+import {
+  User, Trophy, MapPin, Footprints, PartyPopper, Target, DoorOpen, Crown, Trash2,
+  Camera, Lock, Bot, Ban, Loader2, BarChart3, Download, Droplet, DollarSign,
+} from 'lucide-react';
 
 const LANG_OPTIONS = [
   { code: 'fr', label: 'Français' },
@@ -243,11 +247,11 @@ function ProfileCard({ user, t, onAccountPress }: { user: any; t: Record<string,
     <div data-tour="settings-profile" style={{ margin: '0 16px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #1A3A6B, #0D2B55)', border: '1px solid rgba(26,111,214,0.3)', overflow: 'hidden' }}>
       <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #1A6FD6, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, overflow: 'hidden' }}>
-          {user?.profilePhotoUrl ? <img src={user.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+          {user?.profilePhotoUrl ? <img src={user.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={28} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.fullName}</div>
-          <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
+          <div style={{ fontSize: 13, color: '#8B92A5', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
           <div style={{ marginTop: 6, display: 'inline-block', padding: '3px 10px', borderRadius: 12, background: roleColor(user?.role || 'member'), fontSize: 11, fontWeight: 700, color: '#fff' }}>
             {roleLabel[user?.role as UserRole || 'member']}
           </div>
@@ -257,7 +261,7 @@ function ProfileCard({ user, t, onAccountPress }: { user: any; t: Record<string,
         onClick={onAccountPress}
         style={{ width: '100%', padding: '13px 20px', background: 'rgba(26,111,214,0.15)', border: 'none', borderTop: '1px solid rgba(26,111,214,0.2)', color: '#60A5FA', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
       >
-        <span>👤</span> {t.myAccount} <span style={{ fontSize: 16, color: '#4B5563' }}>›</span>
+        <User size={16} /> {t.myAccount} <span style={{ fontSize: 16, color: '#4B5563' }}>›</span>
       </button>
     </div>
   );
@@ -296,9 +300,9 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
   if (!team) {
     return (
       <div style={{ margin: '0 16px 16px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{t.teamSection}</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8B92A5', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{t.teamSection}</div>
         <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-          <div style={{ padding: '14px 16px', color: '#6B7280', fontSize: 13, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{t.noTeam}</div>
+          <div style={{ padding: '14px 16px', color: '#8B92A5', fontSize: 13, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{t.noTeam}</div>
           <TeamJoinCreateInline t={t} createTeam={createTeam} joinTeam={joinTeam} />
         </div>
       </div>
@@ -307,17 +311,17 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
 
   return (
     <div style={{ margin: '0 16px 16px' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{t.teamSection}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B92A5', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{t.teamSection}</div>
       <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
 
         {/* Team header row — click to expand */}
         <button onClick={() => setOpen(!open)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-            {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏆'}
+            {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Trophy size={20} />}
           </div>
           <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{team.name}</div>
-            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{teamMembers.length} membre{teamMembers.length !== 1 ? 's' : ''}</div>
+            <div style={{ fontSize: 12, color: '#8B92A5', marginTop: 2 }}>{teamMembers.length} membre{teamMembers.length !== 1 ? 's' : ''}</div>
           </div>
           <span style={{ color: '#4B5563', fontSize: 20, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>›</span>
         </button>
@@ -326,7 +330,7 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
           <div>
             {/* Team name */}
             <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.teamName}</div>
+              <div style={{ fontSize: 11, color: '#8B92A5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.teamName}</div>
               {editingName ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(26,111,214,0.4)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 14, outline: 'none' }} autoFocus />
@@ -336,7 +340,7 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{team.name}</span>
-                  {isManager && <button onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: 14, padding: '4px 8px' }}>✏️ {t.editName}</button>}
+                  {isManager && <button onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B92A5', fontSize: 14, padding: '4px 8px' }}>✏️ {t.editName}</button>}
                 </div>
               )}
             </div>
@@ -344,11 +348,11 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
             {/* Team logo */}
             <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-                {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏆'}
+                {team.logoUrl ? <img src={team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Trophy size={20} />}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, color: '#E5E7EB', fontWeight: 600 }}>Logo de l&apos;équipe</div>
-                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>JPG, PNG • visible par tous</div>
+                <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>JPG, PNG • visible par tous</div>
               </div>
               {isOwner && (
                 <>
@@ -362,7 +366,7 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
 
             {/* Invite code */}
             <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.inviteCode}</div>
+              <div style={{ fontSize: 11, color: '#8B92A5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.inviteCode}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ fontFamily: 'monospace', fontSize: 22, fontWeight: 900, color: '#1A6FD6', letterSpacing: 4, flex: 1 }}>{team.inviteCode}</div>
                 <button onClick={handleCopy} style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${copied ? 'rgba(16,185,129,0.4)' : 'rgba(26,111,214,0.4)'}`, background: copied ? 'rgba(16,185,129,0.1)' : 'rgba(26,111,214,0.1)', color: copied ? '#10B981' : '#1A6FD6', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
@@ -373,27 +377,27 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
 
             {/* Team toggles */}
             <div style={{ padding: '10px 16px 4px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Paramètres d&apos;équipe</div>
+              <div style={{ fontSize: 11, color: '#8B92A5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Paramètres d&apos;équipe</div>
             </div>
-            <ToggleRow label={`📍 ${t.shareLocation}`} value={teamSettings.shareLocation} onChange={(v) => setTeamSettings({ shareLocation: v })} />
-            <ToggleRow label={`👣 ${t.showMemberTrails}`} value={teamSettings.showMemberTrails} onChange={(v) => setTeamSettings({ showMemberTrails: v })} />
-            <ToggleRow label={`🎉 ${t.salesNotif}`} value={teamSettings.salesNotif} onChange={(v) => setTeamSettings({ salesNotif: v })} />
-            <ToggleRow label={`🎯 ${t.dailyGoalSync}`} value={teamSettings.dailyGoalSync} onChange={(v) => setTeamSettings({ dailyGoalSync: v })} />
+            <ToggleRow icon={<MapPin size={15} />} label={t.shareLocation} value={teamSettings.shareLocation} onChange={(v) => setTeamSettings({ shareLocation: v })} />
+            <ToggleRow icon={<Footprints size={15} />} label={t.showMemberTrails} value={teamSettings.showMemberTrails} onChange={(v) => setTeamSettings({ showMemberTrails: v })} />
+            <ToggleRow icon={<PartyPopper size={15} />} label={t.salesNotif} value={teamSettings.salesNotif} onChange={(v) => setTeamSettings({ salesNotif: v })} />
+            <ToggleRow icon={<Target size={15} />} label={t.dailyGoalSync} value={teamSettings.dailyGoalSync} onChange={(v) => setTeamSettings({ dailyGoalSync: v })} />
 
             {/* Leave / Delete actions */}
             <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {!isOwner && (
-                <button onClick={() => setLeaveFlow('confirm')} style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  🚪 {t.leaveTeam}
+                <button onClick={() => setLeaveFlow('confirm')} style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <DoorOpen size={16} /> {t.leaveTeam}
                 </button>
               )}
               {isOwner && (
                 <>
-                  <button onClick={() => setLeaveFlow('transfer')} style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.08)', color: '#F59E0B', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                    👑 {t.transferOwner}
+                  <button onClick={() => setLeaveFlow('transfer')} style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.08)', color: '#F59E0B', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Crown size={16} /> {t.transferOwner}
                   </button>
-                  <button onClick={() => setLeaveFlow('delete')} style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                    🗑 {t.deleteTeam}
+                  <button onClick={() => setLeaveFlow('delete')} style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Trash2 size={16} /> {t.deleteTeam}
                   </button>
                 </>
               )}
@@ -420,10 +424,10 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {teamMembers.filter((m: any) => m.id !== user?.id).map((m: any) => (
               <button key={m.id} onClick={() => setTransferTarget(m.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `2px solid ${transferTarget === m.id ? '#F59E0B' : 'rgba(255,255,255,0.08)'}`, background: transferTarget === m.id ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', cursor: 'pointer' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1A3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{m.profilePhotoUrl ? <img src={m.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '👤'}</div>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1A3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{m.profilePhotoUrl ? <img src={m.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : <User size={18} />}</div>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{m.fullName}</div>
-                  <div style={{ fontSize: 12, color: '#6B7280' }}>{m.email}</div>
+                  <div style={{ fontSize: 12, color: '#8B92A5' }}>{m.email}</div>
                 </div>
                 {transferTarget === m.id && <span style={{ color: '#F59E0B', fontSize: 16 }}>✓</span>}
               </button>
@@ -532,12 +536,12 @@ function AccountModal({ onClose, user, updateUser, onChangePassword, t }: any) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
         <div style={{ position: 'relative', marginBottom: 8 }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #1A6FD6, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, overflow: 'hidden', cursor: 'pointer' }} onClick={() => photoRef.current?.click()}>
-            {user?.profilePhotoUrl ? <img src={user.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+            {user?.profilePhotoUrl ? <img src={user.profilePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={32} />}
           </div>
-          <button onClick={() => photoRef.current?.click()} style={{ position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: '50%', background: '#1A6FD6', border: '2px solid #1E293B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13 }}>📷</button>
+          <button onClick={() => photoRef.current?.click()} aria-label="Change photo" style={{ position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: '50%', background: '#1A6FD6', border: '2px solid #1E293B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Camera size={13} /></button>
           <input ref={photoRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
         </div>
-        <div style={{ fontSize: 12, color: '#6B7280' }}>Appuyer pour changer la photo</div>
+        <div style={{ fontSize: 12, color: '#8B92A5' }}>Appuyer pour changer la photo</div>
       </div>
 
       {/* Name */}
@@ -555,7 +559,7 @@ function AccountModal({ onClose, user, updateUser, onChangePassword, t }: any) {
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <span style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>{user?.fullName}</span>
-            <button onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: 13 }}>✏️ {t.editName}</button>
+            <button onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B92A5', fontSize: 13 }}>✏️ {t.editName}</button>
           </div>
         )}
       </div>
@@ -563,14 +567,14 @@ function AccountModal({ onClose, user, updateUser, onChangePassword, t }: any) {
       {/* Email */}
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', fontSize: 11, color: '#9CA3AF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Courriel</label>
-        <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', fontSize: 15, color: '#6B7280' }}>
+        <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', fontSize: 15, color: '#8B92A5' }}>
           {user?.email}
         </div>
       </div>
 
       {/* Actions */}
-      <button onClick={onChangePassword} style={{ width: '100%', padding: '13px', borderRadius: 12, border: '1px solid rgba(26,111,214,0.3)', background: 'rgba(26,111,214,0.08)', color: '#60A5FA', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginBottom: 8 }}>
-        🔒 {t.changePassword}
+      <button onClick={onChangePassword} style={{ width: '100%', padding: '13px', borderRadius: 12, border: '1px solid rgba(26,111,214,0.3)', background: 'rgba(26,111,214,0.08)', color: '#60A5FA', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <Lock size={15} /> {t.changePassword}
       </button>
       <button onClick={onClose} style={{ width: '100%', padding: '13px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#9CA3AF', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
         {t.cancel}
@@ -604,15 +608,15 @@ function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }:
 
   return (
     <div style={{ margin: '0 16px 16px' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-        🗑 {t.trash}
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B92A5', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Trash2 size={13} /> {t.trash}
         {!isEmpty && <span style={{ background: '#374151', color: '#9CA3AF', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 10 }}>{activePins.length + activeTeams.length}</span>}
       </div>
       <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           {(['teams', 'pins'] as const).map((tabId) => (
-            <button key={tabId} onClick={() => setTab(tabId)} style={{ flex: 1, padding: '11px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === tabId ? '#EF4444' : 'transparent'}`, color: tab === tabId ? '#EF4444' : '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <button key={tabId} onClick={() => setTab(tabId)} style={{ flex: 1, padding: '11px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === tabId ? '#EF4444' : 'transparent'}`, color: tab === tabId ? '#EF4444' : '#8B92A5', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
               {tabId === 'teams' ? `${t.trashTeams} (${activeTeams.length})` : `${t.trashPins} (${activePins.length})`}
             </button>
           ))}
@@ -629,15 +633,15 @@ function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }:
         {tab === 'teams' && activeTeams.map((entry) => (
           <div key={entry.team.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #1A6FD6, #7C3AED)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-              {entry.team.logoUrl ? <img src={entry.team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏆'}
+              {entry.team.logoUrl ? <img src={entry.team.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Trophy size={20} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.team.name}</div>
-              <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{t.deletedOn} {formatDate(entry.deletedAt)}</div>
+              <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>{t.deletedOn} {formatDate(entry.deletedAt)}</div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: daysLeft(entry.deletedAt) <= 5 ? '#EF4444' : '#F59E0B' }}>{daysLeft(entry.deletedAt)}j</div>
-              <div style={{ fontSize: 10, color: '#6B7280' }}>{t.daysLeft}</div>
+              <div style={{ fontSize: 10, color: '#8B92A5' }}>{t.daysLeft}</div>
             </div>
             <button onClick={() => restoreTeam(entry.team.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.1)', color: '#10B981', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
               {t.restore}
@@ -647,20 +651,20 @@ function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }:
 
         {/* Pins list */}
         {tab === 'pins' && activePins.map((pin) => {
-          const color = PIN_TYPE_COLORS[pin.type] || '#6B7280';
+          const color = PIN_TYPE_COLORS[pin.type] || '#8B92A5';
           return (
             <div key={pin.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: `${color}22`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color, flexShrink: 0 }}>
-                {pin.type === 'sale' ? '✓' : pin.type === 'not_interested' ? '✕' : pin.type === 'call_back' ? '?' : '🤖'}
+                {pin.type === 'sale' ? '✓' : pin.type === 'not_interested' ? '✕' : pin.type === 'call_back' ? '?' : <Bot size={14} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 2 }}>{PIN_TYPE_LABELS[pin.type] || pin.type}</div>
-                <div style={{ fontSize: 11, color: '#6B7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pin.address || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`}</div>
+                <div style={{ fontSize: 11, color: '#8B92A5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pin.address || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`}</div>
                 <div style={{ fontSize: 10, color: '#4B5563', marginTop: 2 }}>{t.deletedOn} {formatDate(pin.deletedAt)}</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: daysLeft(pin.deletedAt) <= 5 ? '#EF4444' : '#F59E0B' }}>{daysLeft(pin.deletedAt)}j</div>
-                <div style={{ fontSize: 10, color: '#6B7280' }}>{t.daysLeft}</div>
+                <div style={{ fontSize: 10, color: '#8B92A5' }}>{t.daysLeft}</div>
               </div>
               <button onClick={() => restorePin(pin.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.1)', color: '#10B981', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
                 {t.restore}
@@ -684,7 +688,7 @@ function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }:
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ margin: '0 16px 16px' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{title}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B92A5', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{title}</div>
       <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
         {children}
       </div>
@@ -697,7 +701,7 @@ function SettingRow({ label, value, onPress, danger }: { label: string; value?: 
     <button onClick={onPress} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: onPress ? 'pointer' : 'default', textAlign: 'left' }}>
       <span style={{ fontSize: 14, color: danger ? '#EF4444' : '#E5E7EB' }}>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {value && <span style={{ fontSize: 13, color: '#6B7280' }}>{value}</span>}
+        {value && <span style={{ fontSize: 13, color: '#8B92A5' }}>{value}</span>}
         {onPress && <span style={{ color: '#4B5563', fontSize: 16 }}>›</span>}
       </div>
     </button>
@@ -729,10 +733,10 @@ function LocationPermissionRow({ t }: { t: Record<string, string> }) {
   if (status === 'granted') {
     return (
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📍</div>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#10B981' }}><MapPin size={20} /></div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#10B981' }}>{t.locationGranted}</div>
-          <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>L&apos;app peut accéder à ta position GPS</div>
+          <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>L&apos;app peut accéder à ta position GPS</div>
         </div>
       </div>
     );
@@ -745,14 +749,14 @@ function LocationPermissionRow({ t }: { t: Record<string, string> }) {
         disabled={status === 'loading'}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', borderRadius: 12, border: `1px solid ${status === 'denied' ? 'rgba(239,68,68,0.35)' : 'rgba(26,111,214,0.35)'}`, background: status === 'denied' ? 'rgba(239,68,68,0.08)' : 'rgba(26,111,214,0.1)', cursor: status === 'loading' ? 'default' : 'pointer', textAlign: 'left' }}
       >
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: status === 'denied' ? 'rgba(239,68,68,0.15)' : 'rgba(26,111,214,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-          {status === 'loading' ? '⏳' : status === 'denied' ? '🚫' : '📍'}
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: status === 'denied' ? 'rgba(239,68,68,0.15)' : 'rgba(26,111,214,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: status === 'denied' ? '#EF4444' : '#60A5FA' }}>
+          {status === 'loading' ? <Loader2 size={20} className="spin" /> : status === 'denied' ? <Ban size={20} /> : <MapPin size={20} />}
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: status === 'denied' ? '#EF4444' : '#60A5FA' }}>
             {status === 'loading' ? 'Détection en cours…' : status === 'denied' ? 'Localisation refusée' : t.locationBtn}
           </div>
-          <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>
             {status === 'denied' ? 'Voir les instructions pour l\'activer' : 'Requis pour afficher ta position sur la carte'}
           </div>
         </div>
@@ -772,10 +776,10 @@ function LocationPermissionRow({ t }: { t: Record<string, string> }) {
   );
 }
 
-function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+function ToggleRow({ label, icon, value, onChange }: { label: string; icon?: React.ReactNode; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-      <span style={{ fontSize: 14, color: '#E5E7EB' }}>{label}</span>
+      <span style={{ fontSize: 14, color: '#E5E7EB', display: 'flex', alignItems: 'center', gap: 8 }}>{icon}{label}</span>
       <div onClick={() => onChange(!value)} style={{ width: 44, height: 24, borderRadius: 12, background: value ? '#1A6FD6' : 'rgba(255,255,255,0.15)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
         <div style={{ position: 'absolute', top: 3, left: value ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
       </div>
@@ -789,7 +793,7 @@ function CenteredModal({ onClose, title, children }: { onClose: () => void; titl
       <div style={{ width: '100%', maxWidth: 400, background: '#1E293B', borderRadius: 20, padding: 24, border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 22, lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8B92A5', cursor: 'pointer', fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
         {children}
       </div>
@@ -914,18 +918,18 @@ function ExportStatsModal({ onClose, sessions }: { onClose: () => void; sessions
       <ModalInput label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
       <ModalInput label="To" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       <button onClick={handleExport} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: '#10B981', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <span>📊</span> Télécharger Excel (.xlsx)
+        <BarChart3 size={16} /> Télécharger Excel (.xlsx)
       </button>
     </CenteredModal>
   );
 }
 
-const PIN_FILTER_OPTIONS: { value: PinType | 'all'; label: string; emoji: string; color: string }[] = [
-  { value: 'all', label: 'Tous les pins', emoji: '📍', color: '#6B7280' },
+const PIN_FILTER_OPTIONS: { value: PinType | 'all'; label: string; emoji: React.ReactNode; color: string }[] = [
+  { value: 'all', label: 'Tous les pins', emoji: <MapPin size={14} />, color: '#8B92A5' },
   { value: 'sale', label: 'Ventes', emoji: '✓', color: '#34D399' },
   { value: 'not_interested', label: 'Non intéressés', emoji: '✕', color: '#EF4444' },
   { value: 'call_back', label: 'Rappels', emoji: '?', color: '#F59E0B' },
-  { value: 'ai_knocked', label: 'IA Knocké', emoji: '🤖', color: '#3B82F6' },
+  { value: 'ai_knocked', label: 'IA Knocké', emoji: <Bot size={14} />, color: '#3B82F6' },
 ];
 
 function ExportPinsModal({ onClose, pins }: { onClose: () => void; pins: any[] }) {
@@ -965,7 +969,7 @@ function ExportPinsModal({ onClose, pins }: { onClose: () => void; pins: any[] }
         {count === 0 ? 'Aucun pin à exporter' : `${count} pin${count > 1 ? 's' : ''} sera${count > 1 ? 'ont' : ''} exporté${count > 1 ? 's' : ''}`}
       </div>
       <button onClick={handleExport} disabled={count === 0} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: count === 0 ? '#374151' : 'linear-gradient(135deg, #1A6FD6, #3B82F6)', color: '#fff', fontWeight: 700, cursor: count === 0 ? 'default' : 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <span>📥</span> Télécharger Excel (.xlsx)
+        <Download size={16} /> Télécharger Excel (.xlsx)
       </button>
     </CenteredModal>
   );
@@ -982,11 +986,11 @@ function TextModal({ onClose, title, body }: { onClose: () => void; title: strin
 function HydrotechCard({ label }: { label: string }) {
   return (
     <div style={{ margin: '16px 16px 0', padding: '16px 20px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.05))', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', gap: 16 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>💧</div>
+      <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff' }}><Droplet size={22} /></div>
       <div>
         <div style={{ fontSize: 10, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>{label}</div>
         <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Hydrotech</div>
-        <div style={{ fontSize: 11, color: '#6B7280' }}>Water solutions partner</div>
+        <div style={{ fontSize: 11, color: '#8B92A5' }}>Water solutions partner</div>
       </div>
     </div>
   );
@@ -1079,13 +1083,13 @@ function DailyStatsSection({ lang }: { lang: string }) {
 
   return (
     <div style={{ margin: '0 16px 16px' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{statsLabel}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B92A5', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{statsLabel}</div>
       <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
         <button onClick={() => setOpen(!open)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📊</div>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><BarChart3 size={22} /></div>
           <div style={{ flex: 1, textAlign: 'left' }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{statsLabel}</div>
-            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{dayLabel} · {months[selectedDate.getMonth()]}</div>
+            <div style={{ fontSize: 12, color: '#8B92A5', marginTop: 2 }}>{dayLabel} · {months[selectedDate.getMonth()]}</div>
           </div>
           <span style={{ color: '#4B5563', fontSize: 20, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>›</span>
         </button>
@@ -1111,9 +1115,9 @@ function DailyStatsSection({ lang }: { lang: string }) {
               <div style={{ textAlign: 'center', padding: '20px 0', color: '#4B5563', fontSize: 13 }}>{noDataLabel}</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <DayStat value={String(dayDoors)} label={lang === 'fr' ? 'Portes' : lang === 'es' ? 'Puertas' : 'Doors'} color="#8B5CF6" icon="🚪" />
-                <DayStat value={String(daySales)} label={lang === 'fr' ? 'Ventes' : lang === 'es' ? 'Ventas' : 'Sales'} color="#10B981" icon="💰" />
-                <DayStat value={`${dayRatio}%`} label="Ratio" color="#F59E0B" icon="🎯" />
+                <DayStat value={String(dayDoors)} label={lang === 'fr' ? 'Portes' : lang === 'es' ? 'Puertas' : 'Doors'} color="#8B5CF6" icon={<DoorOpen size={15} />} />
+                <DayStat value={String(daySales)} label={lang === 'fr' ? 'Ventes' : lang === 'es' ? 'Ventas' : 'Sales'} color="#10B981" icon={<DollarSign size={15} />} />
+                <DayStat value={`${dayRatio}%`} label="Ratio" color="#F59E0B" icon={<Target size={15} />} />
                 <DayStat value={formatWorkTime(daySeconds, lang)} label={lang === 'fr' ? 'Temps' : lang === 'es' ? 'Tiempo' : 'Time'} color="#1A6FD6" icon="⏱" />
               </div>
             )}
@@ -1129,12 +1133,12 @@ const statsNavBtn: React.CSSProperties = {
   borderRadius: 8, color: '#fff', fontSize: 13, padding: '6px 11px', cursor: 'pointer', lineHeight: 1,
 };
 
-function DayStat({ value, label, color, icon }: { value: string; label: string; color: string; icon: string }) {
+function DayStat({ value, label, color, icon }: { value: string; label: string; color: string; icon: React.ReactNode }) {
   return (
     <div style={{ padding: '14px 10px', borderRadius: 12, background: `${color}15`, border: `1px solid ${color}33`, textAlign: 'center' }}>
-      <div style={{ fontSize: 13, marginBottom: 4 }}>{icon}</div>
+      <div style={{ display: 'flex', justifyContent: 'center', color, marginBottom: 4 }}>{icon}</div>
       <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>{label}</div>
     </div>
   );
 }

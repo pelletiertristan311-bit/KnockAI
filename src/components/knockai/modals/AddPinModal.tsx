@@ -2,16 +2,17 @@
 import { useState, useEffect } from 'react';
 import { useKnockAIStore, PinType } from '@/lib/knockai/store';
 import { reverseGeocode } from '@/lib/knockai/geocode';
-
-const PIN_TYPES: { type: PinType; label: string; color: string; icon: string; desc: string }[] = [
-  { type: 'sale', label: 'Sale', color: '#34D399', icon: '✓', desc: 'Deal confirmed' },
-  { type: 'not_interested', label: 'Not Interested', color: '#EF4444', icon: '✕', desc: 'Said no' },
-  { type: 'call_back', label: 'Call Back', color: '#F59E0B', icon: '?', desc: 'Follow up needed' },
-  { type: 'ai_knocked', label: 'AI Knocked', color: '#3B82F6', icon: 'AI', desc: 'AI placed marker' },
-];
+import { getPinT } from '@/lib/knockai/pinTranslations';
 
 export default function AddPinModal() {
-  const { closeAddPinModal, addPin, addPinModal, userLocation } = useKnockAIStore();
+  const { closeAddPinModal, addPin, addPinModal, userLocation, user } = useKnockAIStore();
+  const t = getPinT(user?.language);
+  const PIN_TYPES: { type: PinType; label: string; color: string; icon: string; desc: string }[] = [
+    { type: 'sale', label: t.typeSale, color: '#34D399', icon: '✓', desc: t.descSale },
+    { type: 'not_interested', label: t.typeNotInterested, color: '#EF4444', icon: '✕', desc: t.descNotInterested },
+    { type: 'call_back', label: t.typeCallBack, color: '#F59E0B', icon: '?', desc: t.descCallBack },
+    { type: 'ai_knocked', label: t.typeAiKnocked, color: '#3B82F6', icon: 'AI', desc: t.descAiKnocked },
+  ];
   const [selectedType, setSelectedType] = useState<PinType>('sale');
   const [leadName, setLeadName] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,7 +31,7 @@ export default function AddPinModal() {
   const pinInfo = PIN_TYPES.find((p) => p.type === selectedType)!;
 
   return (
-    <ModalSheet onClose={closeAddPinModal} title="Add Pin">
+    <ModalSheet onClose={closeAddPinModal} title={t.addPinTitle}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
         {PIN_TYPES.map(({ type, label, color, icon, desc }) => (
           <button key={type} onClick={() => setSelectedType(type)} style={{ padding: '12px', borderRadius: 12, border: `2px solid ${selectedType === type ? color : 'rgba(255,255,255,0.08)'}`, background: selectedType === type ? `${color}22` : 'rgba(255,255,255,0.03)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
@@ -38,24 +39,24 @@ export default function AddPinModal() {
               <div style={{ width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: type === 'ai_knocked' ? 9 : 14 }}>{icon}</div>
               <span style={{ fontSize: 13, fontWeight: 600, color: selectedType === type ? color : '#fff' }}>{label}</span>
             </div>
-            <div style={{ fontSize: 11, color: '#6B7280' }}>{desc}</div>
+            <div style={{ fontSize: 11, color: '#8B92A5' }}>{desc}</div>
           </button>
         ))}
       </div>
       <div style={{ marginBottom: 12 }}>
-        <label style={labelStyle}>Lead Name (optional)</label>
+        <label style={labelStyle}>{t.leadNameOptional}</label>
         <input value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder="e.g. Carole Tremblay" style={inputStyle} />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <label style={labelStyle}>Phone Number (optional)</label>
+        <label style={labelStyle}>{t.phoneOptional}</label>
         <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="e.g. 415-555-0101" style={inputStyle} />
       </div>
       <div style={{ marginBottom: 20 }}>
-        <label style={labelStyle}>Notes</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes about this visit..." rows={3} style={{ ...inputStyle, resize: 'none' }} />
+        <label style={labelStyle}>{t.notes}</label>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.notesPlaceholder} rows={3} style={{ ...inputStyle, resize: 'none' }} />
       </div>
       <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '16px', borderRadius: 12, border: 'none', cursor: 'pointer', background: `linear-gradient(90deg, ${pinInfo.color}, ${pinInfo.color}bb)`, color: '#fff', fontSize: 16, fontWeight: 700 }}>
-        {saving ? 'Saving...' : `Save ${pinInfo.label} Pin`}
+        {saving ? t.saving : `${t.savePinPrefix} ${pinInfo.label}`}
       </button>
     </ModalSheet>
   );
@@ -79,7 +80,7 @@ export function ModalSheet({ children, onClose, title }: { children: React.React
         {!isDesktop && <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '12px auto 20px' }} />}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, marginTop: isDesktop ? 0 : 0 }}>
           <h2 style={{ fontSize: 20, fontWeight: 800 }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
         </div>
         {children}
       </div>
