@@ -15,7 +15,10 @@ export default function SignUpScreen() {
   const handle = async () => {
     if (!name || !email || !password) { setError('Please fill in all fields.'); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password must be at least 8 characters and include a letter and a number.');
+      return;
+    }
     if (!agreed) { setError('Please accept the Terms of Service.'); return; }
     setLoading(true); setError('');
     const result = await signup(name, email, password);

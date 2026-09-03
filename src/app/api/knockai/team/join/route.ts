@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRedis, TEAM_KEY, INVITE_KEY, USER_KEY, TTL } from '@/lib/knockai/redis';
 import { getSession, unauthorized } from '@/lib/knockai/session';
+import { checkRateLimit, tooManyRequests } from '@/lib/knockai/rateLimit';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
@@ -8,6 +9,9 @@ export async function POST(req: NextRequest) {
 
   const session = getSession(req);
   if (!session) return unauthorized();
+
+  // Throttle invite-code guesses per account.
+  if (!(await checkRateLimit(`team-join:${session.email}`, 20, 60 * 60))) return tooManyRequests();
 
   try {
     const { inviteCode, user } = await req.json();

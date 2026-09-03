@@ -816,7 +816,7 @@ function PasswordModal({ onClose, t }: { onClose: () => void; t: Record<string, 
 
   const handle = async () => {
     if (!next || next !== confirm) { setError('Passwords do not match'); return; }
-    if (next.length < 6) { setError('Minimum 6 characters'); return; }
+    if (next.length < 8 || !/[a-zA-Z]/.test(next) || !/[0-9]/.test(next)) { setError('Minimum 8 caractères, avec au moins une lettre et un chiffre'); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/knockai/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user?.email, currentPassword: current, newPassword: next }) });

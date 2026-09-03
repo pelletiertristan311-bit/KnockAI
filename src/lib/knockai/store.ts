@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getSupabaseClient } from '@/lib/knockai/supabase';
+import { randomId, randomInviteCode } from '@/lib/knockai/id';
 
 async function syncToRedis(email: string, userData: object, teamId?: string, teamData?: object) {
   try {
@@ -406,7 +407,7 @@ export const useKnockAIStore = create<KnockAIState>()(
       clockIn: () => {
         const now = new Date().toISOString();
         const session: Session = {
-          id: `session-${Date.now()}`,
+          id: randomId('session'),
           userId: get().user?.id || '',
           clockInAt: now,
           distanceMeters: 0,
@@ -433,7 +434,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         const salesMade = sessionPins.filter((p) => p.type === 'sale').length;
         const completed: Session = currentSession
           ? { ...currentSession, clockOutAt: now.toISOString(), durationSeconds: totalSecs, doorsKnocked, salesMade }
-          : { id: `session-${Date.now()}`, userId: get().user?.id || '', clockInAt: now.toISOString(), clockOutAt: now.toISOString(), durationSeconds: totalSecs, distanceMeters: 0, doorsKnocked, salesMade, date: localDateKey(now) };
+          : { id: randomId('session'), userId: get().user?.id || '', clockInAt: now.toISOString(), clockOutAt: now.toISOString(), durationSeconds: totalSecs, distanceMeters: 0, doorsKnocked, salesMade, date: localDateKey(now) };
         set((state) => ({
           isClockedIn: false, isPaused: false, clockInTime: null, pausedAt: null, accumulatedSeconds: 0, currentSession: null,
           sessions: [...state.sessions, completed],
@@ -460,7 +461,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         const { user, team } = get();
         const pin: Pin = {
           ...pinData,
-          id: `pin-${Date.now()}`,
+          id: randomId('pin'),
           userId: user?.id || '',
           placedByName: user?.fullName || 'Unknown',
           placedAt: new Date().toISOString(),
@@ -534,7 +535,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         const { user } = get();
         const route: Route = {
           ...routeData,
-          id: `route-${Date.now()}`,
+          id: randomId('route'),
           userId: user?.id || '',
           placedByName: user?.fullName || 'Unknown',
           createdAt: new Date().toISOString(),
@@ -564,17 +565,17 @@ export const useKnockAIStore = create<KnockAIState>()(
       setSettingsSection: (section) => set({ settingsSection: section }),
 
       addTeamDate: (dateData) => {
-        const date: TeamDate = { ...dateData, id: `date-${Date.now()}` };
+        const date: TeamDate = { ...dateData, id: randomId('date') };
         set((state) => ({ teamDates: [...state.teamDates, date] }));
         const s = get();
         if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === s.user?.id), s.trailPoints.filter((p) => p.userId === s.user?.id));
       },
 
       addTeamDay: (day, createdBy, createdByName, teamId) => {
-        const groupId = `daygroup-${Date.now()}`;
+        const groupId = randomId('daygroup');
         const times = ['08:30', '12:00', '15:00'];
-        const newDates: TeamDate[] = times.map((time, i) => ({
-          id: `date-${Date.now()}-${i}`,
+        const newDates: TeamDate[] = times.map((time) => ({
+          id: randomId('date'),
           date: day,
           time,
           city: '',
@@ -664,9 +665,9 @@ export const useKnockAIStore = create<KnockAIState>()(
       createTeam: async (name) => {
         const { user } = get();
         const team: Team = {
-          id: `team-${Date.now()}`,
+          id: randomId('team'),
           name,
-          inviteCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          inviteCode: randomInviteCode(),
           ownerId: user?.id || '',
         };
         const members = user ? [{ id: user.id, fullName: user.fullName, email: user.email, role: 'owner' as const, isOnline: true }] : [];

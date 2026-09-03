@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getRedis, AUTH_KEY, RESET_KEY } from '@/lib/knockai/redis';
+import { validatePassword } from '@/lib/knockai/password';
+import { checkRateLimit, getClientIp, tooManyRequests } from '@/lib/knockai/rateLimit';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
@@ -9,7 +11,13 @@ export async function POST(req: NextRequest) {
   try {
     const { code, newPassword } = await req.json();
     if (!code || !newPassword) return NextResponse.json({ error: 'Code et mot de passe requis' }, { status: 400 });
-    if (newPassword.length < 6) return NextResponse.json({ error: 'Mot de passe trop court (min. 6 caractères)' }, { status: 400 });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
+
+    // The 6-digit code is the only thing standing between an attacker and
+    // the account at this point — throttle guesses hard, by IP.
+    const ip = getClientIp(req);
+    if (!(await checkRateLimit(`reset:ip:${ip}`, 10, 15 * 60))) return tooManyRequests();
 
     const email = await redis.get(RESET_KEY(code));
     if (!email) return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 401 });

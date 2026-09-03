@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { getRedis, AUTH_KEY, USER_KEY } from '@/lib/knockai/redis';
+import { validatePassword } from '@/lib/knockai/password';
+import { checkRateLimit, getClientIp, tooManyRequests } from '@/lib/knockai/rateLimit';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
@@ -10,12 +13,18 @@ export async function POST(req: NextRequest) {
     const { email, password, fullName } = await req.json();
     if (!email || !password || !fullName) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 
+    const passwordError = validatePassword(password);
+    if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
+
+    const ip = getClientIp(req);
+    if (!(await checkRateLimit(`register:ip:${ip}`, 10, 60 * 60))) return tooManyRequests();
+
     const normalizedEmail = email.toLowerCase().trim();
     const existing = await redis.get(AUTH_KEY(normalizedEmail));
     if (existing) return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const userId = `user-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const userId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
     await redis.set(AUTH_KEY(normalizedEmail), JSON.stringify({ passwordHash, userId, createdAt }), { ex: 60 * 60 * 24 * 365 * 10 });

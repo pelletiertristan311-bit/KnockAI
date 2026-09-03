@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getRedis, AUTH_KEY } from '@/lib/knockai/redis';
 import { getSession, unauthorized } from '@/lib/knockai/session';
+import { validatePassword } from '@/lib/knockai/password';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
@@ -13,7 +14,8 @@ export async function POST(req: NextRequest) {
   try {
     const { currentPassword, newPassword } = await req.json();
     if (!currentPassword || !newPassword) return NextResponse.json({ error: 'Champs manquants' }, { status: 400 });
-    if (newPassword.length < 6) return NextResponse.json({ error: 'Nouveau mot de passe trop court (min. 6 caractères)' }, { status: 400 });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
 
     const normalizedEmail = session.email;
     const authRaw = await redis.get(AUTH_KEY(normalizedEmail));
