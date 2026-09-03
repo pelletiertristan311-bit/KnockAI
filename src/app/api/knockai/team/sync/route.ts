@@ -51,6 +51,15 @@ export async function POST(req: NextRequest) {
         const allowed = callerRole === 'owner' || (callerRole === 'manager' && !touchesOwner && m.id !== uid);
         return allowed ? m : { ...m, role: prior.role };
       });
+
+      // Removal validation: anyone may remove themselves (leaving the
+      // team), but only owner/manager may remove someone else. Restore
+      // anyone else missing from the incoming list otherwise.
+      if (callerRole !== 'owner' && callerRole !== 'manager') {
+        const newIds = new Set(safeTeamMembers.map((m: any) => m.id));
+        const restored = priorMembers.filter((m: any) => m.id !== uid && !newIds.has(m.id));
+        safeTeamMembers = [...safeTeamMembers, ...restored];
+      }
     }
 
     // Merge pins by userId: replace the syncing user's pins, keep all other users' pins

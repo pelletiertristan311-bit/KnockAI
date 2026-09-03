@@ -758,11 +758,27 @@ export const useKnockAIStore = create<KnockAIState>()(
         }
       },
 
-      leaveTeam: () => set((state) => ({
-        team: null,
-        teamMembers: [],
-        user: state.user ? { ...state.user, teamId: undefined, role: 'member' } : null,
-      })),
+      leaveTeam: () => {
+        const { user, team, teamMembers, teamDates, routes } = get();
+        if (user && team) {
+          // Remove self from the shared roster — otherwise teammates keep
+          // seeing a "member" who has actually left.
+          const updatedMembers = teamMembers.filter((m) => m.id !== user.id);
+          syncTeamToRedis(team.id, updatedMembers, teamDates, routes, team, undefined, undefined, undefined, user.id);
+        }
+        set((state) => ({
+          team: null,
+          teamMembers: [],
+          user: state.user ? { ...state.user, teamId: undefined, role: 'member' } : null,
+        }));
+        const s = get();
+        if (s.user?.email) {
+          // Persist the caller's own "no team" state too, or logging back
+          // in would reload the stale teamId still stored under their
+          // account and re-attach them to the team they just left.
+          syncToRedis(s.user.email, { pins: s.pins, sessions: s.sessions, routes: s.routes, team: null, teamMembers: [], user: s.user });
+        }
+      },
 
       deleteTeam: () => {
         const { team, teamMembers } = get();
