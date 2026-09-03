@@ -391,12 +391,15 @@ export const useKnockAIStore = create<KnockAIState>()(
         }
       },
 
-      logout: () => set({
-        user: null, isAuthenticated: false, authScreen: 'login',
-        isClockedIn: false, isPaused: false, clockInTime: null, pausedAt: null, accumulatedSeconds: 0,
-        currentSession: null, pins: [], sessions: [], routes: [], teamDates: [], team: null, teamMembers: [],
-        trailPoints: [],
-      }),
+      logout: () => {
+        fetch('/api/knockai/auth/logout', { method: 'POST' }).catch(() => {});
+        set({
+          user: null, isAuthenticated: false, authScreen: 'login',
+          isClockedIn: false, isPaused: false, clockInTime: null, pausedAt: null, accumulatedSeconds: 0,
+          currentSession: null, pins: [], sessions: [], routes: [], teamDates: [], team: null, teamMembers: [],
+          trailPoints: [],
+        });
+      },
 
       setActiveTab: (tab) => set({ activeTab: tab }),
 

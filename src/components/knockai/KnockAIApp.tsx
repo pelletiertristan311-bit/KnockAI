@@ -60,6 +60,17 @@ export default function KnockAIApp() {
       Notification.requestPermission().catch(() => {});
     }
 
+    // Accounts that were logged in before server sessions existed have no
+    // session cookie yet — detect that once on startup and force a clean
+    // re-login instead of silently losing all backend sync.
+    const initial = useKnockAIStore.getState();
+    if (initial.isAuthenticated && initial.user?.email !== 'demo@knockai.com') {
+      fetch('/api/knockai/auth/me')
+        .then((res) => res.json())
+        .then((json) => { if (!json.authenticated) useKnockAIStore.getState().logout(); })
+        .catch(() => {});
+    }
+
     // Push local data to Redis + pull team data immediately on startup
     const s = useKnockAIStore.getState();
     if (s.isAuthenticated && s.team?.id) {

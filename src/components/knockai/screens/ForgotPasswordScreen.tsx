@@ -9,7 +9,6 @@ export default function ForgotPasswordScreen() {
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [resetCode, setResetCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +19,6 @@ export default function ForgotPasswordScreen() {
       const res = await fetch('/api/knockai/auth/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const json = await res.json();
       if (!res.ok) { setError(json.error || 'Failed'); setLoading(false); return; }
-      setResetCode(json.code);
       setStep('code');
     } catch { setError('Network error'); }
     setLoading(false);
@@ -61,12 +59,9 @@ export default function ForgotPasswordScreen() {
 
         {step === 'code' && (
           <>
-            {resetCode && (
-              <div style={{ padding: 16, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 12, marginBottom: 20 }}>
-                <p style={{ color: '#10B981', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Your reset code (copy it):</p>
-                <p style={{ color: '#fff', fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>{resetCode}</p>
-              </div>
-            )}
+            <div style={{ padding: 16, background: 'rgba(26,111,214,0.1)', border: '1px solid rgba(26,111,214,0.3)', borderRadius: 12, marginBottom: 20 }}>
+              <p style={{ color: '#9CA3AF', fontSize: 13, lineHeight: 1.5 }}>We&apos;ve emailed a 6-digit code to <strong style={{ color: '#fff' }}>{email}</strong>. Check your inbox (and spam folder) and enter it below.</p>
+            </div>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Reset Code</label>
               <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" style={inputStyle} />

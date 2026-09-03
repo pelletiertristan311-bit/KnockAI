@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRedis, AUTH_KEY, RESET_KEY } from '@/lib/knockai/redis';
+import { sendPasswordResetEmail } from '@/lib/knockai/email';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
@@ -11,14 +12,19 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
     const exists = await redis.get(AUTH_KEY(normalizedEmail));
-    if (!exists) return NextResponse.json({ error: 'Aucun compte avec cet email' }, { status: 404 });
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    await redis.set(RESET_KEY(code), normalizedEmail, { ex: 60 * 15 });
+    // Always respond the same way whether or not the account exists, so this
+    // endpoint can't be used to find out which emails are registered. The
+    // reset code is only ever delivered by email — never returned here.
+    if (exists) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      await redis.set(RESET_KEY(code), normalizedEmail, { ex: 60 * 15 });
+      await sendPasswordResetEmail(normalizedEmail, code);
+    }
 
-    return NextResponse.json({ ok: true, code });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('Forgot password error:', err);
-    return NextResponse.json({ error: 'Échec de la génération du code' }, { status: 500 });
+    return NextResponse.json({ error: 'Échec de la demande de réinitialisation' }, { status: 500 });
   }
 }

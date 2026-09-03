@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getRedis, AUTH_KEY, USER_KEY, TEAM_KEY } from '@/lib/knockai/redis';
+import { setSessionCookie } from '@/lib/knockai/session';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
@@ -28,7 +29,9 @@ export async function POST(req: NextRequest) {
       teamData = teamRaw ? (typeof teamRaw === 'string' ? JSON.parse(teamRaw) : teamRaw) : null;
     }
 
-    return NextResponse.json({ ok: true, userData, teamData });
+    const response = NextResponse.json({ ok: true, userData, teamData });
+    setSessionCookie(response, { uid: auth.userId, email: normalizedEmail });
+    return response;
   } catch (err) {
     console.error('Login error:', err);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });

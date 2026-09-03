@@ -1,44 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRedis, TEAM_KEY, TTL } from '@/lib/knockai/redis';
+import { getRedis, TEAM_KEY, USER_KEY, TTL } from '@/lib/knockai/redis';
+import { getSession, unauthorized } from '@/lib/knockai/session';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
   if (!redis) return NextResponse.json({ ok: true, skipped: true });
 
+  const session = getSession(req);
+  if (!session) return unauthorized();
+
   try {
-    const { teamId, teamMembers, teamDates, routes, team, pins, trailPoints, drawings, syncingUserId } = await req.json();
+    const { teamId, teamMembers, teamDates, routes, team, pins, trailPoints, drawings } = await req.json();
     if (!teamId) return NextResponse.json({ error: 'Missing teamId' }, { status: 400 });
+
+    // Verify the authenticated user actually belongs to this team before
+    // letting them write anything into its shared record.
+    const ownRaw = await redis.get(USER_KEY(session.email));
+    const own = ownRaw ? (typeof ownRaw === 'string' ? JSON.parse(ownRaw) : ownRaw) : null;
+    if (own?.user?.teamId !== teamId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const uid = session.uid;
+    // Only ever accept pins/trail points/drawings the caller attributes to
+    // themselves — otherwise a team member could inject or overwrite data
+    // under a teammate's userId.
+    const safePins = Array.isArray(pins) ? pins.filter((p: any) => p?.userId === uid) : pins;
+    const safeTrail = Array.isArray(trailPoints) ? trailPoints.filter((p: any) => p?.userId === uid) : trailPoints;
+    const safeDrawings = Array.isArray(drawings) ? drawings.filter((d: any) => d?.userId === uid) : drawings;
 
     const existing: any = await redis.get(TEAM_KEY(teamId));
     const current = existing ? (typeof existing === 'string' ? JSON.parse(existing) : existing) : {};
 
     // Merge pins by userId: replace the syncing user's pins, keep all other users' pins
     let mergedPins = current.teamPins || [];
-    if (pins && pins.length > 0) {
-      // Only merge if there are actual pins — never overwrite with empty array
-      const incomingUserIds = new Set((pins as any[]).map((p) => p.userId).filter(Boolean));
+    if (safePins && safePins.length > 0) {
       mergedPins = [
-        ...(current.teamPins || []).filter((p: any) => !incomingUserIds.has(p.userId)),
-        ...pins,
+        ...(current.teamPins || []).filter((p: any) => p.userId !== uid),
+        ...safePins,
       ];
     }
 
     // Merge trailPoints by userId: same strategy
     let mergedTrail = current.trailPoints || [];
-    if (trailPoints && trailPoints.length > 0) {
-      const incomingTrailUserIds = new Set((trailPoints as any[]).map((p) => p.userId).filter(Boolean));
+    if (safeTrail && safeTrail.length > 0) {
       mergedTrail = [
-        ...(current.trailPoints || []).filter((p: any) => !incomingTrailUserIds.has(p.userId)),
-        ...trailPoints,
+        ...(current.trailPoints || []).filter((p: any) => p.userId !== uid),
+        ...safeTrail,
       ];
     }
 
     // Merge drawings by userId: replace syncing user's drawings, keep others'
     let mergedDrawings = current.drawings || [];
-    if (drawings !== undefined && syncingUserId) {
+    if (safeDrawings !== undefined) {
       mergedDrawings = [
-        ...(current.drawings || []).filter((d: any) => d.userId !== syncingUserId),
-        ...drawings,
+        ...(current.drawings || []).filter((d: any) => d.userId !== uid),
+        ...safeDrawings,
       ];
     }
 

@@ -1,12 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/knockai/supabase';
+import { getRedis, USER_KEY } from '@/lib/knockai/redis';
+import { getSession, unauthorized } from '@/lib/knockai/session';
 
-export async function POST(req: Request) {
+async function verifyTeamMembership(email: string, teamId: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return true; // Redis not configured — nothing to check against locally.
+  const raw = await redis.get(USER_KEY(email));
+  const data = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
+  return data?.user?.teamId === teamId;
+}
+
+export async function POST(req: NextRequest) {
+  const session = getSession(req);
+  if (!session) return unauthorized();
+
   const body = await req.json();
-  const { userId, teamId, lat, lng, heading } = body;
-  if (!userId || !teamId || lat == null || lng == null) {
+  const { teamId, lat, lng, heading } = body;
+  if (!teamId || lat == null || lng == null) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
+  if (!(await verifyTeamMembership(session.email, teamId))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  // Never trust a client-supplied userId — always the authenticated caller.
+  const userId = session.uid;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
@@ -30,12 +48,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
+  const session = getSession(req);
+  if (!session) return unauthorized();
+
   const body = await req.json();
-  const { userId, teamId } = body;
-  if (!userId || !teamId) {
+  const { teamId } = body;
+  if (!teamId) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
+  if (!(await verifyTeamMembership(session.email, teamId))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  const userId = session.uid;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });

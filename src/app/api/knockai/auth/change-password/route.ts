@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getRedis, AUTH_KEY } from '@/lib/knockai/redis';
+import { getSession, unauthorized } from '@/lib/knockai/session';
 
 export async function POST(req: NextRequest) {
   const redis = getRedis();
   if (!redis) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
+  const session = getSession(req);
+  if (!session) return unauthorized();
+
   try {
-    const { email, currentPassword, newPassword } = await req.json();
-    if (!email || !currentPassword || !newPassword) return NextResponse.json({ error: 'Champs manquants' }, { status: 400 });
+    const { currentPassword, newPassword } = await req.json();
+    if (!currentPassword || !newPassword) return NextResponse.json({ error: 'Champs manquants' }, { status: 400 });
     if (newPassword.length < 6) return NextResponse.json({ error: 'Nouveau mot de passe trop court (min. 6 caractères)' }, { status: 400 });
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = session.email;
     const authRaw = await redis.get(AUTH_KEY(normalizedEmail));
     if (!authRaw) return NextResponse.json({ error: 'Compte introuvable' }, { status: 404 });
 
