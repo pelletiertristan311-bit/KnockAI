@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/knockai/supabase';
-import { getRedis, USER_KEY } from '@/lib/knockai/redis';
 import { getSession, unauthorized } from '@/lib/knockai/session';
-
-async function verifyTeamMembership(email: string, teamId: string): Promise<boolean> {
-  const redis = getRedis();
-  if (!redis) return true; // Redis not configured — nothing to check against locally.
-  const raw = await redis.get(USER_KEY(email));
-  const data = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
-  return data?.user?.teamId === teamId;
-}
+import { verifyTeamMembership } from '@/lib/knockai/teamMembership';
 
 export async function POST(req: NextRequest) {
   const session = getSession(req);

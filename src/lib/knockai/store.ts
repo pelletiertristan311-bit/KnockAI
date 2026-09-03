@@ -142,6 +142,17 @@ export interface TeamDrawing {
   createdAt: string;
 }
 
+export interface TeamSign {
+  id: string;
+  teamId: string;
+  userId: string;
+  userName?: string;
+  lat: number;
+  lng: number;
+  label: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -196,7 +207,7 @@ interface KnockAIState {
   editPinModal: { open: boolean; pin?: Pin };
   statsModal: boolean;
   settingsSection: string | null;
-  notifications: { push: boolean; chat: boolean; routes: boolean; aiAlerts: boolean };
+  notifications: { push: boolean; routes: boolean; aiAlerts: boolean };
   mapTheme: 'light' | 'dark';
 
   isOnline: boolean;
@@ -204,6 +215,7 @@ interface KnockAIState {
   trailPoints: TrailPoint[];
   trailView: 'mine' | 'team' | 'off';
   teamDrawings: TeamDrawing[];
+  teamSigns: TeamSign[];
   trashedPins: TrashedPin[];
   trashedTeams: TrashedTeam[];
   teamSettings: { shareLocation: boolean; showMemberTrails: boolean; salesNotif: boolean; dailyGoalSync: boolean; cities: string[] };
@@ -255,6 +267,8 @@ interface KnockAIState {
   setTrailView: (view: 'mine' | 'team' | 'off') => void;
   addTeamDrawing: (drawing: TeamDrawing) => void;
   removeTeamDrawing: (id: string) => void;
+  addTeamSign: (sign: TeamSign) => void;
+  removeTeamSign: (id: string) => void;
   pushToTeam: () => void;
   loadTeamDrawings: () => Promise<void>;
   setOnline: (online: boolean) => void;
@@ -263,6 +277,8 @@ interface KnockAIState {
   updateMyTeamStats: () => void;
   setNotifications: (notifs: Partial<KnockAIState['notifications']>) => void;
   setMapTheme: (theme: 'light' | 'dark') => void;
+  tutorialTrigger: number;
+  requestTutorial: () => void;
   pollTeamData: () => Promise<void>;
 }
 
@@ -321,13 +337,15 @@ export const useKnockAIStore = create<KnockAIState>()(
       editPinModal: { open: false },
       statsModal: false,
       settingsSection: null,
-      notifications: { push: true, chat: true, routes: true, aiAlerts: true },
+      notifications: { push: true, routes: true, aiAlerts: true },
       mapTheme: 'light',
+      tutorialTrigger: 0,
       isOnline: true,
       dailyGoals: { doors: 20, sales: 3 },
       trailPoints: [],
       trailView: 'mine',
       teamDrawings: [],
+      teamSigns: [],
       trashedPins: [],
       trashedTeams: [],
       teamSettings: { shareLocation: true, showMemberTrails: true, salesNotif: true, dailyGoalSync: false, cities: [] },
@@ -820,6 +838,23 @@ export const useKnockAIStore = create<KnockAIState>()(
         syncTeamToRedis(team.id, teamMembers, teamDates, routes, team, undefined, undefined, myDrawings, user.id);
       },
 
+      // Signs sync via Supabase realtime only (like drawings' primary
+      // channel) — no Redis fallback, since they're a low-frequency,
+      // low-stakes marker type rather than time-sensitive shared data.
+      addTeamSign: (sign) => {
+        const { user, team, teamSigns } = get();
+        if (!user || !team) return;
+        set({ teamSigns: [...teamSigns.filter((s) => s.id !== sign.id), sign] });
+        fetch('/api/knockai/signs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sign }) }).catch(() => {});
+      },
+
+      removeTeamSign: (id) => {
+        const { user, team, teamSigns } = get();
+        if (!user || !team) return;
+        set({ teamSigns: teamSigns.filter((s) => s.id !== id) });
+        fetch('/api/knockai/signs', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {});
+      },
+
       pushToTeam: () => {
         const { user, team, teamMembers, teamDates, routes, pins, trailPoints, teamDrawings } = get();
         if (!user || !team) return;
@@ -893,6 +928,7 @@ export const useKnockAIStore = create<KnockAIState>()(
 
       setNotifications: (notifs) => set((state) => ({ notifications: { ...state.notifications, ...notifs } })),
       setMapTheme: (theme) => set({ mapTheme: theme }),
+      requestTutorial: () => set((s) => ({ tutorialTrigger: s.tutorialTrigger + 1 })),
 
       pollTeamData: async () => {
         const { team, user, teamMembers: prevMembers } = get();
@@ -950,6 +986,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         trailPoints: state.trailPoints,
         trailView: state.trailView,
         teamDrawings: state.teamDrawings,
+        teamSigns: state.teamSigns,
         dailyGoals: state.dailyGoals,
         trashedPins: state.trashedPins,
         trashedTeams: state.trashedTeams,

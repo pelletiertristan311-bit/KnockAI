@@ -103,7 +103,7 @@ export default function HomeScreen() {
     { label: 'Add Pin', icon: '📍', action: () => openAddPinModal() },
     { label: 'Go to Map', icon: '🗺️', action: () => setActiveTab('map') },
     { label: 'View Stats', icon: '📊', action: () => goToSettings('stats') },
-    { label: 'Team Chat', icon: '💬', action: () => setActiveTab('team') },
+    { label: 'Team', icon: '👥', action: () => setActiveTab('team') },
   ];
 
   return (

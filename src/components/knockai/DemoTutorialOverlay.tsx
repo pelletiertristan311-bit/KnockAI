@@ -27,7 +27,6 @@ const STEPS: TourStep[] = [
   { tab: 'home',     selector: '[data-tour="home-goals"]',          title: '🎯 Objectifs quotidiens',     desc: "Fixe tes cibles de portes et de ventes. La barre de progression se remplit au fur et à mesure de ta journée.",                   padding: 4 },
   // ── TEAM ──────────────────────────────────────────────────
   { tab: 'team',     selector: '[data-tour="team-tab-members"]',    title: '👥 Membres de l\'équipe',    desc: "Vois qui est en ligne maintenant. Le point vert = actif sur le terrain en ce moment.",                                           padding: 6 },
-  { tab: 'team',     selector: '[data-tour="team-tab-chat"]',       title: '💬 Chat d\'équipe',          desc: "Envoie des messages instantanés à toute ton équipe. Parfait pour les mises à jour terrain.",                                      padding: 6 },
   { tab: 'team',     selector: '[data-tour="team-tab-routes"]',     title: '🗺️ Routes de territoire',    desc: "Les gérants créent des zones sur la carte — tout le monde voit sa zone assignée en temps réel.",                                 padding: 6 },
   { tab: 'team',     selector: '[data-tour="team-tab-leaderboard"]',title: '🏆 Classement',              desc: "Qui mène aujourd'hui? Portes et ventes classées en temps réel. Un peu de compétition saine!",                                    padding: 6 },
   // ── MAP ───────────────────────────────────────────────────
@@ -60,7 +59,7 @@ function getRect(selector: string, pad: number): SRect | null {
 /* ─── Main component ─────────────────────────────────────── */
 
 export default function DemoTutorialOverlay() {
-  const { user, activeTab, setActiveTab } = useKnockAIStore();
+  const { user, activeTab, setActiveTab, tutorialTrigger } = useKnockAIStore();
   const isDemo = user?.email === 'demo@knockai.com';
 
   const [phase, setPhase] = useState<Phase>(null);
@@ -172,6 +171,15 @@ export default function DemoTutorialOverlay() {
       }, 150);
     }
   }, [setActiveTab, locateStep, startProgress, advance]);
+
+  // ── Restart on request (Settings > Support > Tutoriel) ────
+  const initialTutorialTrigger = useRef(tutorialTrigger);
+  useEffect(() => {
+    if (tutorialTrigger === initialTutorialTrigger.current) return;
+    initialTutorialTrigger.current = tutorialTrigger;
+    sessionStorage.removeItem(SESSION_KEY);
+    startTour();
+  }, [tutorialTrigger, startTour]);
 
   // ── Manual next ───────────────────────────────────────────
   const handleNext = () => {

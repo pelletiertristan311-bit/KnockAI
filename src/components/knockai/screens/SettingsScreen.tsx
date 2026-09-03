@@ -16,7 +16,7 @@ const T: Record<string, Record<string, string>> = {
     editName: 'Edit Name', save: 'Save', cancel: 'Cancel', logout: 'Log Out',
     language: 'Language', distUnit: 'Distance Unit', aiAssist: 'AI Assistance',
     mapTheme: 'Map Theme', dark: 'Dark', light: 'Light', km: 'Kilometers', miles: 'Miles',
-    pushNotif: 'Push Notifications', chatNotif: 'Chat Notifications',
+    pushNotif: 'Push Notifications',
     routeNotif: 'Route Alerts', aiAlerts: 'AI Alerts',
     exportStats: 'Export Stats (Excel)', exportPins: 'Export Pins (Excel)',
     changePassword: 'Change Password', teamInfo: 'Team', teamSection: 'Team',
@@ -43,7 +43,7 @@ const T: Record<string, Record<string, string>> = {
     editName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', logout: 'Déconnexion',
     language: 'Langue', distUnit: 'Unité de distance', aiAssist: 'Assistance IA',
     mapTheme: 'Thème de carte', dark: 'Sombre', light: 'Clair', km: 'Kilomètres', miles: 'Miles',
-    pushNotif: 'Notifications Push', chatNotif: 'Notifications Chat',
+    pushNotif: 'Notifications Push',
     routeNotif: 'Alertes de route', aiAlerts: 'Alertes IA',
     exportStats: 'Exporter les stats (Excel)', exportPins: 'Exporter les pins (Excel)',
     changePassword: 'Changer le mot de passe', teamInfo: 'Équipe', teamSection: 'Équipe',
@@ -70,7 +70,7 @@ const T: Record<string, Record<string, string>> = {
     editName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', logout: 'Cerrar sesión',
     language: 'Idioma', distUnit: 'Unidad de distancia', aiAssist: 'Asistencia IA',
     mapTheme: 'Tema del mapa', dark: 'Oscuro', light: 'Claro', km: 'Kilómetros', miles: 'Millas',
-    pushNotif: 'Notificaciones Push', chatNotif: 'Notificaciones Chat',
+    pushNotif: 'Notificaciones Push',
     routeNotif: 'Alertas de ruta', aiAlerts: 'Alertas IA',
     exportStats: 'Exportar stats (Excel)', exportPins: 'Exportar pins (Excel)',
     changePassword: 'Cambiar contraseña', teamInfo: 'Equipo', teamSection: 'Equipo',
@@ -103,7 +103,7 @@ export default function SettingsScreen() {
     trashedPins, trashedTeams, teamSettings,
     updateUser, updateTeam, leaveTeam, deleteTeam, createTeam, joinTeam,
     restorePin, restoreTeam, setTeamSettings,
-    setNotifications, setMapTheme, logout,
+    setNotifications, setMapTheme, logout, requestTutorial,
   } = useKnockAIStore();
 
   const lang = user?.language || 'fr';
@@ -144,7 +144,6 @@ export default function SettingsScreen() {
         <Section title={t.preferences}>
           <LocationPermissionRow t={t} />
           <ToggleRow label={t.pushNotif} value={notifications.push} onChange={(v) => setNotifications({ push: v })} />
-          <ToggleRow label={t.chatNotif} value={notifications.chat} onChange={(v) => setNotifications({ chat: v })} />
           <ToggleRow label={t.routeNotif} value={notifications.routes} onChange={(v) => setNotifications({ routes: v })} />
           <ToggleRow label={t.aiAlerts} value={notifications.aiAlerts} onChange={(v) => setNotifications({ aiAlerts: v })} />
           <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -199,7 +198,9 @@ export default function SettingsScreen() {
 
       {/* Support */}
       <Section title={t.support}>
-        <SettingRow label={t.tutorial} onPress={() => {}} />
+        {/* The guided tour only exists for the demo account — no dead
+            button for real users who have nothing to show them. */}
+        {user?.email === 'demo@knockai.com' && <SettingRow label={t.tutorial} onPress={requestTutorial} />}
         <SettingRow label={t.contactSupport} onPress={() => window.open('mailto:support@knockai.com')} />
         <SettingRow label={t.privacy} onPress={() => setShowPrivacy(true)} />
         <SettingRow label={t.terms} onPress={() => setShowTerms(true)} />
@@ -298,7 +299,6 @@ function TeamCard({ user, team, teamMembers, updateTeam, leaveTeam, deleteTeam, 
         <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingLeft: 4 }}>{t.teamSection}</div>
         <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', color: '#6B7280', fontSize: 13, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{t.noTeam}</div>
-          <SettingRow label={t.createTeam} onPress={() => { /* handled inline below */ }} />
           <TeamJoinCreateInline t={t} createTeam={createTeam} joinTeam={joinTeam} />
         </div>
       </div>

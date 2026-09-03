@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { useKnockAIStore, Pin, PinType, type TeamDrawing, type LiveLocation } from '@/lib/knockai/store';
+import { useKnockAIStore, Pin, PinType, type TeamDrawing, type TeamSign, type LiveLocation } from '@/lib/knockai/store';
 import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
+import { reverseGeocode } from '@/lib/knockai/geocode';
+import { cachedFetch } from '@/lib/knockai/geocodeCache';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -110,10 +112,9 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [drawingColor, setDrawingColor] = useState('#EF4444');
 
   const [isSignsMode, setIsSignsMode] = useState(false);
-  const [signs, setSigns] = useState<{ id: string; lat: number; lng: number; label: string; createdAt: string }[]>([]);
   const [signPendingCoords, setSignPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [signLabelInput, setSignLabelInput] = useState('');
-  const [selectedSign, setSelectedSign] = useState<{ id: string; lat: number; lng: number; label: string; createdAt: string } | null>(null);
+  const [selectedSign, setSelectedSign] = useState<TeamSign | null>(null);
   const [showSignsList, setShowSignsList] = useState(false);
   const [selectedLiveLoc, setSelectedLiveLoc] = useState<{ loc: LiveLocation; address: string | null } | null>(null);
   const [liveLocAddress, setLiveLocAddress] = useState<string | null>(null);
@@ -121,13 +122,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   drawingColorRef.current = drawingColor;
   isDrawingErasingRef.current = isDrawingErasing;
   isSignsModeRef.current = isSignsMode;
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('knockai_signs');
-      if (stored) setSigns(JSON.parse(stored));
-    } catch {}
-  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -139,23 +133,15 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
 
   const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team, liveLocations,
     setUserLocation, setPinFilter, toggleAI, openAddPinModal, openEditPinModal, addPin,
-    addRoute, deleteRoute, mapTheme, teamDrawings, addTeamDrawing, removeTeamDrawing } = useKnockAIStore();
+    addRoute, deleteRoute, mapTheme, teamDrawings, addTeamDrawing, removeTeamDrawing,
+    teamSigns, addTeamSign, removeTeamSign } = useKnockAIStore();
 
   drawingsRef.current = teamDrawings;
 
   const filteredPins = useMemo(() => pinFilter === 'all' ? pins : pins.filter((p) => p.type === pinFilter), [pins, pinFilter]);
   const searchResults = useMemo(() => searchQuery ? pins.filter((p) => p.leadName?.toLowerCase().includes(searchQuery.toLowerCase()) || p.address.toLowerCase().includes(searchQuery.toLowerCase())) : [], [pins, searchQuery]);
   const isManagerOrOwner = user?.role === 'manager' || user?.role === 'owner';
-
-  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'KnockAI/1.0' } });
-      const data = await res.json();
-      const a = data.address || {};
-      const parts = [a.house_number, a.road || a.street, a.city || a.town || a.village || a.municipality].filter(Boolean);
-      return parts.length > 0 ? parts.join(' ') : data.display_name?.split(',')[0] || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
-  };
+  const signs = useMemo(() => team?.id ? teamSigns.filter((s) => s.teamId === team.id) : [], [teamSigns, team?.id]);
 
   // Map init
   useEffect(() => {
@@ -323,26 +309,31 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       if (zoom < 16) { src.setData({ type: 'FeatureCollection', features: [] }); return; }
 
       const b = map.getBounds();
-      const bbox = `${b.getSouth().toFixed(6)},${b.getWest().toFixed(6)},${b.getNorth().toFixed(6)},${b.getEast().toFixed(6)}`;
+      // Rounded to ~11m so panning back over an already-fetched area (very
+      // common while working a block) reuses the cached response instead of
+      // re-hitting Overpass.
+      const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
       const q = `[out:json][timeout:8];(way["addr:housenumber"](${bbox});node["addr:housenumber"](${bbox}););out center;`;
 
       if (abortCtrl) abortCtrl.abort();
       abortCtrl = new AbortController();
       try {
-        const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`, { signal: abortCtrl.signal });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data.elements || data.elements.length > 500) { src.setData({ type: 'FeatureCollection', features: [] }); return; }
-        const features = (data.elements as any[])
-          .map((el) => {
-            const num = el.tags?.['addr:housenumber'];
-            if (!num) return null;
-            const lat = el.type === 'node' ? el.lat : el.center?.lat;
-            const lon = el.type === 'node' ? el.lon : el.center?.lon;
-            if (!lat || !lon) return null;
-            return { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [lon, lat] }, properties: { n: num } };
-          })
-          .filter(Boolean);
+        const features = await cachedFetch(`civic:${bbox}`, async () => {
+          const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`, { signal: abortCtrl!.signal });
+          if (!res.ok) throw new Error('overpass request failed');
+          const data = await res.json();
+          if (!data.elements || data.elements.length > 500) return [];
+          return (data.elements as any[])
+            .map((el) => {
+              const num = el.tags?.['addr:housenumber'];
+              if (!num) return null;
+              const lat = el.type === 'node' ? el.lat : el.center?.lat;
+              const lon = el.type === 'node' ? el.lon : el.center?.lon;
+              if (!lat || !lon) return null;
+              return { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [lon, lat] }, properties: { n: num } };
+            })
+            .filter(Boolean);
+        });
         if (!abortCtrl.signal.aborted) src.setData({ type: 'FeatureCollection', features });
       } catch { /* abort or network error — silent */ }
     };
@@ -706,20 +697,17 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   };
 
   const saveSignMarker = (coords: { lat: number; lng: number }, label: string) => {
-    const sign = { id: `sign-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, lat: coords.lat, lng: coords.lng, label, createdAt: new Date().toISOString() };
-    setSigns((prev) => {
-      const next = [...prev, sign];
-      localStorage.setItem('knockai_signs', JSON.stringify(next));
-      return next;
-    });
+    if (!team?.id || !user?.id) return;
+    const sign: TeamSign = {
+      id: `sign-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      teamId: team.id, userId: user.id, userName: user.fullName || '',
+      lat: coords.lat, lng: coords.lng, label, createdAt: new Date().toISOString(),
+    };
+    addTeamSign(sign);
   };
 
   const deleteSignById = (id: string) => {
-    setSigns((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      localStorage.setItem('knockai_signs', JSON.stringify(next));
-      return next;
-    });
+    removeTeamSign(id);
   };
 
   const flyToPin = (pin: Pin) => { mapInstance.current?.flyTo({ center: [pin.lng, pin.lat], zoom: 17, duration: 800 }); setShowSearch(false); setSearchQuery(''); };

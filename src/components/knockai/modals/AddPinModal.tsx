@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useKnockAIStore, PinType } from '@/lib/knockai/store';
+import { reverseGeocode } from '@/lib/knockai/geocode';
 
 const PIN_TYPES: { type: PinType; label: string; color: string; icon: string; desc: string }[] = [
   { type: 'sale', label: 'Sale', color: '#34D399', icon: '✓', desc: 'Deal confirmed' },
@@ -21,15 +22,7 @@ export default function AddPinModal() {
     setSaving(true);
     const lat = addPinModal.lat ?? userLocation?.lat ?? 37.7751;
     const lng = addPinModal.lng ?? userLocation?.lng ?? -122.418;
-    let address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'KnockAI/1.0' } });
-      const data = await res.json();
-      const a = data.address || {};
-      const parts = [a.house_number, a.road || a.street, a.city || a.town || a.village || a.municipality].filter(Boolean);
-      if (parts.length > 0) address = parts.join(' ');
-      else if (data.display_name) address = data.display_name.split(',')[0];
-    } catch {}
+    const address = await reverseGeocode(lat, lng);
     addPin({ lat, lng, address, type: selectedType, leadName: leadName || undefined, phone: phone || undefined, notes: notes || undefined, placedByAi: false, teamId: useKnockAIStore.getState().team?.id });
     closeAddPinModal();
   };
