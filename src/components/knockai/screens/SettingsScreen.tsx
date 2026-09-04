@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useKnockAIStore, UserRole, PinType, TrashedPin, TrashedTeam } from '@/lib/knockai/store';
+import { compressImage } from '@/lib/knockai/compressImage';
 import {
   User, Trophy, MapPin, Footprints, PartyPopper, Target, DoorOpen, Crown, Trash2,
   Camera, Lock, Bot, Ban, Loader2, BarChart3, Download, Droplet, DollarSign,
@@ -525,7 +526,15 @@ function AccountModal({ onClose, user, updateUser, onChangePassword, t }: any) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => { if (ev.target?.result) updateUser({ profilePhotoUrl: ev.target.result as string }); };
+    reader.onload = async (ev) => {
+      if (!ev.target?.result) return;
+      try {
+        const compressed = await compressImage(ev.target.result as string, 512, 0.8);
+        updateUser({ profilePhotoUrl: compressed });
+      } catch {
+        updateUser({ profilePhotoUrl: ev.target.result as string });
+      }
+    };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
@@ -541,7 +550,9 @@ function AccountModal({ onClose, user, updateUser, onChangePassword, t }: any) {
           <button onClick={() => photoRef.current?.click()} aria-label="Change photo" style={{ position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: '50%', background: '#1A6FD6', border: '2px solid #1E293B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Camera size={13} /></button>
           <input ref={photoRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
         </div>
-        <div style={{ fontSize: 12, color: '#8B92A5' }}>Appuyer pour changer la photo</div>
+        <div style={{ fontSize: 12, color: user?.profilePhotoUrl ? '#8B92A5' : '#F59E0B', fontWeight: user?.profilePhotoUrl ? 400 : 700 }}>
+          {user?.profilePhotoUrl ? 'Appuyer pour changer la photo' : 'Ajoute une photo — visible sur la carte et l\'équipe'}
+        </div>
       </div>
 
       {/* Name */}
