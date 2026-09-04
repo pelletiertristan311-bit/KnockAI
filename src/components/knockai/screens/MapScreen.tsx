@@ -164,7 +164,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
 
   const { pins, routes, userLocation, pinFilter, teamMembers, user, team, liveLocations,
     setUserLocation, setPinFilter, openAddPinModal, openEditPinModal, addPin,
-    addRoute, deleteRoute, mapTheme, teamDrawings, addTeamDrawing, removeTeamDrawing,
+    addRoute, deleteRoute, mapTheme, mapView, teamDrawings, addTeamDrawing, removeTeamDrawing,
     teamSigns, addTeamSign, removeTeamSign } = useKnockAIStore();
 
   drawingsRef.current = teamDrawings;
@@ -185,11 +185,11 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         link.href = 'https://unpkg.com/maplibre-gl@5.22.0/dist/maplibre-gl.css';
         document.head.appendChild(link);
       }
-      const { userLocation: initLoc, mapTheme: initTheme } = useKnockAIStore.getState();
+      const { userLocation: initLoc, mapTheme: initTheme, mapView: initView } = useKnockAIStore.getState();
       const initCenter: [number, number] = initLoc ? [initLoc.lng, initLoc.lat] : [-73.5673, 45.5017];
       const styleUrl = initTheme === 'dark' ? `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}` : `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
       try {
-        const map = new ml.Map({ container: mapRef.current!, style: styleUrl, center: initCenter, zoom: 15, pitch: 45, attributionControl: false });
+        const map = new ml.Map({ container: mapRef.current!, style: styleUrl, center: initCenter, zoom: 15, pitch: initView === '2d' ? 0 : 45, attributionControl: false });
         let loaded = false;
         map.on('load', () => {
           loaded = true;
@@ -254,9 +254,16 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     map.once('style.load', () => {
       applyMapVisualStyle(map, mapTheme === 'dark' ? 'dark' : 'light');
       addMapLayers(map);
+      map.setPitch(useKnockAIStore.getState().mapView === '2d' ? 0 : 45);
       setMapStyleVersion((v) => v + 1);
     });
   }, [mapTheme, mapLoaded]);
+
+  // 2D/3D toggle from Settings
+  useEffect(() => {
+    if (!mapInstance.current || !mapLoaded) return;
+    mapInstance.current.easeTo({ pitch: mapView === '2d' ? 0 : 45, duration: 400 });
+  }, [mapView, mapLoaded]);
 
   // Pin markers
   useEffect(() => {

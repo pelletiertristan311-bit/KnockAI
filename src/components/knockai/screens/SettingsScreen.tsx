@@ -21,6 +21,7 @@ const T: Record<string, Record<string, string>> = {
     editName: 'Edit Name', save: 'Save', cancel: 'Cancel', logout: 'Log Out',
     language: 'Language', distUnit: 'Distance Unit', aiAssist: 'AI Assistance',
     mapTheme: 'Map Theme', dark: 'Dark', light: 'Light', km: 'Kilometers', miles: 'Miles',
+    mapView: 'Map View', mapViewFlat: 'Flat (2D)', mapViewTilted: 'Tilted (3D)',
     pushNotif: 'Push Notifications',
     routeNotif: 'Route Alerts', aiAlerts: 'AI Alerts',
     exportStats: 'Export Stats (Excel)', exportPins: 'Export Pins (Excel)',
@@ -48,6 +49,7 @@ const T: Record<string, Record<string, string>> = {
     editName: 'Modifier le nom', save: 'Sauvegarder', cancel: 'Annuler', logout: 'Déconnexion',
     language: 'Langue', distUnit: 'Unité de distance', aiAssist: 'Assistance IA',
     mapTheme: 'Thème de carte', dark: 'Sombre', light: 'Clair', km: 'Kilomètres', miles: 'Miles',
+    mapView: 'Vue de la carte', mapViewFlat: 'Plate (2D)', mapViewTilted: 'Inclinée (3D)',
     pushNotif: 'Notifications Push',
     routeNotif: 'Alertes de route', aiAlerts: 'Alertes IA',
     exportStats: 'Exporter les stats (Excel)', exportPins: 'Exporter les pins (Excel)',
@@ -75,6 +77,7 @@ const T: Record<string, Record<string, string>> = {
     editName: 'Editar nombre', save: 'Guardar', cancel: 'Cancelar', logout: 'Cerrar sesión',
     language: 'Idioma', distUnit: 'Unidad de distancia', aiAssist: 'Asistencia IA',
     mapTheme: 'Tema del mapa', dark: 'Oscuro', light: 'Claro', km: 'Kilómetros', miles: 'Millas',
+    mapView: 'Vista del mapa', mapViewFlat: 'Plana (2D)', mapViewTilted: 'Inclinada (3D)',
     pushNotif: 'Notificaciones Push',
     routeNotif: 'Alertas de ruta', aiAlerts: 'Alertas IA',
     exportStats: 'Exportar stats (Excel)', exportPins: 'Exportar pins (Excel)',
@@ -104,11 +107,11 @@ const T: Record<string, Record<string, string>> = {
 
 export default function SettingsScreen() {
   const {
-    user, team, teamMembers, notifications, mapTheme, sessions, pins,
+    user, team, teamMembers, notifications, mapTheme, mapView, sessions, pins,
     trashedPins, trashedTeams, teamSettings,
     updateUser, updateTeam, leaveTeam, deleteTeam, createTeam, joinTeam,
     restorePin, restoreTeam, setTeamSettings,
-    setNotifications, setMapTheme, logout, requestTutorial,
+    setNotifications, setMapTheme, setMapView, logout, requestTutorial,
   } = useKnockAIStore();
 
   const lang = user?.language || 'fr';
@@ -177,6 +180,16 @@ export default function SettingsScreen() {
               {(['light', 'dark'] as const).map((th) => (
                 <button key={th} onClick={() => setMapTheme(th)} style={{ padding: '4px 10px', borderRadius: 8, border: `1px solid ${mapTheme === th ? '#1A6FD6' : 'rgba(255,255,255,0.1)'}`, background: mapTheme === th ? 'rgba(26,111,214,0.2)' : 'transparent', color: mapTheme === th ? '#1A6FD6' : '#9CA3AF', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                   {th === 'light' ? t.light : t.dark}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 14, color: '#E5E7EB' }}>{t.mapView}</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['2d', '3d'] as const).map((v) => (
+                <button key={v} onClick={() => setMapView(v)} style={{ padding: '4px 10px', borderRadius: 8, border: `1px solid ${mapView === v ? '#1A6FD6' : 'rgba(255,255,255,0.1)'}`, background: mapView === v ? 'rgba(26,111,214,0.2)' : 'transparent', color: mapView === v ? '#1A6FD6' : '#9CA3AF', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  {v === '2d' ? t.mapViewFlat : t.mapViewTilted}
                 </button>
               ))}
             </div>

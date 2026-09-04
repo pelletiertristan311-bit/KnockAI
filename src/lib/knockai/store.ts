@@ -209,6 +209,7 @@ interface KnockAIState {
   settingsSection: string | null;
   notifications: { push: boolean; routes: boolean; aiAlerts: boolean };
   mapTheme: 'light' | 'dark';
+  mapView: '2d' | '3d';
 
   isOnline: boolean;
   dailyGoals: { doors: number; sales: number };
@@ -276,6 +277,7 @@ interface KnockAIState {
   updateMyTeamStats: () => void;
   setNotifications: (notifs: Partial<KnockAIState['notifications']>) => void;
   setMapTheme: (theme: 'light' | 'dark') => void;
+  setMapView: (view: '2d' | '3d') => void;
   tutorialTrigger: number;
   requestTutorial: () => void;
   pollTeamData: () => Promise<void>;
@@ -337,6 +339,7 @@ export const useKnockAIStore = create<KnockAIState>()(
       settingsSection: null,
       notifications: { push: true, routes: true, aiAlerts: true },
       mapTheme: 'light',
+      mapView: '3d',
       tutorialTrigger: 0,
       isOnline: true,
       dailyGoals: { doors: 20, sales: 3 },
@@ -968,6 +971,7 @@ export const useKnockAIStore = create<KnockAIState>()(
 
       setNotifications: (notifs) => set((state) => ({ notifications: { ...state.notifications, ...notifs } })),
       setMapTheme: (theme) => set({ mapTheme: theme }),
+      setMapView: (view) => set({ mapView: view }),
       requestTutorial: () => set((s) => ({ tutorialTrigger: s.tutorialTrigger + 1 })),
 
       pollTeamData: async () => {
@@ -1022,6 +1026,7 @@ export const useKnockAIStore = create<KnockAIState>()(
         teamDates: state.teamDates,
         notifications: state.notifications,
         mapTheme: state.mapTheme,
+        mapView: state.mapView,
         trailPoints: state.trailPoints,
         trailView: state.trailView,
         teamDrawings: state.teamDrawings,
