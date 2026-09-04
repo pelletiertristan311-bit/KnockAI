@@ -46,12 +46,12 @@ const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: stri
   { type: 'sale', label: 'Vente', icon: '$', color: '#34D399' },
   { type: 'not_interested', label: 'Non', icon: '✕', color: '#EF4444' },
   { type: 'call_back', label: 'Aucune réponse', icon: '?', color: '#F59E0B' },
-  { type: 'quote', label: 'Soumission', icon: '"', color: '#A855F7' },
-  { type: 'business_card', label: "Carte d'affaire", icon: '📇', color: '#14B8A6' },
+  { type: 'quote', label: 'Soumission', icon: '🧾', color: '#A855F7' },
+  { type: 'business_card', label: "Carte d'affaire", icon: '📇', color: '#3B82F6' },
 ];
 
-const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
-const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
+const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#3B82F6' };
+const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', quote: '🧾', business_card: '📇' };
 const DRAW_COLORS = ['#EF4444', '#1F2937', '#3B82F6'];
 
 // Falls back to the original hardcoded key so the map doesn't break before
@@ -127,7 +127,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [routeName, setRouteName] = useState('');
   const [routeType, setRouteType] = useState<'individual' | 'team'>('individual');
   const [routeLockedMsg, setRouteLockedMsg] = useState('');
-  const [quickPinCoords, setQuickPinCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [quickPinCoords, setQuickPinCoords] = useState<{ lat: number; lng: number; screenX: number; screenY: number } | null>(null);
+  const [radialOpen, setRadialOpen] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [mapStyleVersion, setMapStyleVersion] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -146,7 +147,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [signCapture, setSignCapture] = useState<{ lat: number; lng: number; photoDataUrl: string; address: string } | null>(null);
   const [signNoteInput, setSignNoteInput] = useState('');
   const [savingSign, setSavingSign] = useState(false);
-  const signCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const signGeoPromiseRef = useRef<Promise<{ lat: number; lng: number }> | null>(null);
   const signPhotoInputRef = useRef<HTMLInputElement>(null);
   const [selectedSign, setSelectedSign] = useState<TeamSign | null>(null);
   const [showSignsList, setShowSignsList] = useState(false);
@@ -225,7 +226,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               drawingPointsRef.current = next;
               setDrawingPoints([...next]);
             } else {
-              setQuickPinCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+              const rect = mapRef.current!.getBoundingClientRect();
+              setQuickPinCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng, screenX: rect.left + e.point.x, screenY: rect.top + e.point.y });
             }
           });
           map.on('dblclick', (e: any) => {
@@ -239,6 +241,14 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     }).catch(() => setMapError('MapLibre GL could not be loaded'));
     return () => { if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; } };
   }, []);
+
+  // Radial pin picker pop-open animation — fires a tick after mount so the
+  // CSS transition (starting from scale 0 at the click point) actually runs.
+  useEffect(() => {
+    if (!quickPinCoords) { setRadialOpen(false); return; }
+    const t = setTimeout(() => setRadialOpen(true), 20);
+    return () => clearTimeout(t);
+  }, [quickPinCoords]);
 
   // Map theme change
   useEffect(() => {
@@ -732,48 +742,70 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     if (dotsSrc) dotsSrc.setData({ type: 'FeatureCollection', features: [] });
   };
 
-  // New sign flow: tap the button -> grab current GPS (you're standing at
-  // the sign) -> open the camera -> the photo you take becomes the marker.
-  // No more manually tapping the map to place it.
+  // New sign flow: tap the button -> open the camera immediately -> GPS is
+  // fetched in parallel (you're standing at the sign) -> the photo you take
+  // becomes the marker at that position. No more manually tapping the map.
+  //
+  // The camera must be opened synchronously inside this click handler, not
+  // after an `await`/callback — several mobile browsers (notably iOS
+  // Safari) only allow a file/camera picker to open within the same user
+  // gesture that triggered it, and silently refuse afterwards. Gating the
+  // input's .click() behind the async geolocation result (as a first
+  // attempt did) meant the picker never opened and the button just spun
+  // forever waiting for a photo that could never arrive.
   const handleAddSignClick = () => {
     if (!isManagerOrOwner || signCapturing) return;
     if (isStreetDrawing) cancelStreetDrawing();
     if (isDrawingErasing) exitErasing();
-    if (!navigator.geolocation) { setSignError("La géolocalisation n'est pas disponible sur cet appareil."); return; }
     setSignError('');
     setSignCapturing(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        signCoordsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        signPhotoInputRef.current?.click();
-        // capturing stays true until a photo is picked or the picker is
-        // cancelled (no reliable cancel event, so we clear it once the
-        // photo is processed or after a generous timeout)
-        setTimeout(() => setSignCapturing(false), 60000);
-      },
-      () => { setSignCapturing(false); setSignError('Position GPS refusée ou indisponible — impossible de localiser le panneau.'); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+
+    signGeoPromiseRef.current = navigator.geolocation
+      ? new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (err) => reject(err),
+            { enableHighAccuracy: true, timeout: 15000 }
+          );
+        })
+      : Promise.reject(new Error('geolocation unavailable'));
+
+    signPhotoInputRef.current?.click();
+
+    // Mobile browsers don't reliably fire `change` when the camera/picker
+    // is cancelled — clear the loading state once the page regains focus
+    // (returning from the picker) if nothing ended up selected.
+    const clearIfCancelled = () => {
+      setTimeout(() => {
+        if (signPhotoInputRef.current && signPhotoInputRef.current.files?.length === 0) {
+          setSignCapturing(false);
+        }
+      }, 500);
+    };
+    window.addEventListener('focus', clearIfCancelled, { once: true });
   };
 
   const handleSignPhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
-    const coords = signCoordsRef.current;
-    setSignCapturing(false);
-    if (!file || !coords) return;
+    if (!file) { setSignCapturing(false); return; }
     try {
-      const rawDataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('read failed'));
-        reader.readAsDataURL(file);
-      });
+      const [rawDataUrl, coords] = await Promise.all([
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('read failed'));
+          reader.readAsDataURL(file);
+        }),
+        signGeoPromiseRef.current ?? Promise.reject(new Error('no location')),
+      ]);
       const photoDataUrl = await compressImage(rawDataUrl);
       const address = await reverseGeocode(coords.lat, coords.lng);
       setSignCapture({ lat: coords.lat, lng: coords.lng, photoDataUrl, address });
     } catch {
-      setSignError("Échec du traitement de la photo — réessaie.");
+      setSignError('Position GPS refusée/indisponible ou échec du traitement de la photo — réessaie.');
+    } finally {
+      e.target.value = '';
+      setSignCapturing(false);
     }
   };
 
@@ -1172,31 +1204,93 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </div>
       )}
 
-      {/* Quick pin picker */}
-      {quickPinCoords && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setQuickPinCoords(null)}>
-          <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: isDesktop ? '20px 28px 32px' : '16px 20px 36px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-            <p style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, marginBottom: 16 }}>Quel type de pin ?</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              {QUICK_PIN_TYPES.map(({ type, label, icon, color }) => (
-                <button key={type} disabled={geocoding} onClick={async () => {
-                  const coords = quickPinCoords;
-                  setQuickPinCoords(null);
-                  setGeocoding(true);
-                  const address = await reverseGeocode(coords.lat, coords.lng);
-                  setGeocoding(false);
-                  addPin({ lat: coords.lat, lng: coords.lng, address, type, placedByAi: false });
-                }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 14, border: `2px solid ${color}44`, background: `${color}18`, cursor: geocoding ? 'default' : 'pointer', opacity: geocoding ? 0.6 : 1 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>{icon}</div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color, textAlign: 'center' }}>{label}</span>
-                </button>
-              ))}
+      {/* Quick pin picker — radial menu that pops out in a circle around the tapped spot */}
+      {quickPinCoords && (() => {
+        const RADIUS = isDesktop ? 116 : 96;
+        const BTN = isDesktop ? 62 : 56;
+        const CENTER = isDesktop ? 56 : 50;
+        const margin = RADIUS + BTN / 2 + 16;
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 400;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+        const cx = Math.min(Math.max(quickPinCoords.screenX, margin), vw - margin);
+        const cy = Math.min(Math.max(quickPinCoords.screenY, margin), vh - margin);
+        const closeRadial = () => { setRadialOpen(false); window.setTimeout(() => setQuickPinCoords(null), 180); };
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 250, background: radialOpen ? 'rgba(4,12,26,0.32)' : 'rgba(4,12,26,0)', transition: 'background 0.25s ease', touchAction: 'none' }}
+            onClick={closeRadial}
+          >
+            {/* ripple marking the tapped spot */}
+            <div style={{ position: 'fixed', left: cx, top: cy, width: 14, height: 14, marginLeft: -7, marginTop: -7, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', boxShadow: '0 0 0 3px rgba(0,0,0,0.25)', opacity: radialOpen ? 1 : 0, transition: 'opacity 0.2s ease' }} />
+            <div style={{ position: 'fixed', left: cx, top: cy, width: RADIUS * 2, height: RADIUS * 2, marginLeft: -RADIUS, marginTop: -RADIUS, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.35)', opacity: radialOpen ? 0 : 0.9, transform: radialOpen ? 'scale(1)' : 'scale(0.15)', transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.5s ease', pointerEvents: 'none' }} />
+
+            {QUICK_PIN_TYPES.map(({ type, label, icon, color }, i) => {
+              const angle = (Math.PI * 2 * i) / QUICK_PIN_TYPES.length - Math.PI / 2;
+              const tx = Math.cos(angle) * RADIUS;
+              const ty = Math.sin(angle) * RADIUS;
+              return (
+                <div
+                  key={type}
+                  style={{
+                    position: 'fixed', left: cx, top: cy,
+                    transform: radialOpen ? `translate(-50%, -50%) translate(${tx}px, ${ty}px) scale(1)` : 'translate(-50%, -50%) scale(0.2)',
+                    opacity: radialOpen ? 1 : 0,
+                    transition: `transform 0.36s cubic-bezier(0.34,1.56,0.64,1) ${i * 35}ms, opacity 0.22s ease ${i * 35}ms`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    pointerEvents: radialOpen ? 'auto' : 'none',
+                  }}
+                >
+                  <button
+                    disabled={geocoding}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const coords = quickPinCoords;
+                      setRadialOpen(false);
+                      setQuickPinCoords(null);
+                      setGeocoding(true);
+                      const address = await reverseGeocode(coords.lat, coords.lng);
+                      setGeocoding(false);
+                      addPin({ lat: coords.lat, lng: coords.lng, address, type, placedByAi: false });
+                    }}
+                    style={{ width: BTN, height: BTN, borderRadius: '50%', border: `2px solid ${color}`, background: color, color: '#fff', fontWeight: 800, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 14px ${color}88`, cursor: geocoding ? 'default' : 'pointer', opacity: geocoding ? 0.6 : 1 }}
+                  >
+                    {icon}
+                  </button>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: 'rgba(13,43,85,0.85)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap' }}>{label}</span>
+                </div>
+              );
+            })}
+
+            {/* Center = cancel, as if the tap never happened */}
+            <button
+              aria-label="Annuler"
+              onClick={(e) => { e.stopPropagation(); closeRadial(); }}
+              style={{
+                position: 'fixed', left: cx, top: cy,
+                width: CENTER, height: CENTER, marginLeft: -CENTER / 2, marginTop: -CENTER / 2,
+                borderRadius: '50%', border: '2px solid rgba(255,255,255,0.45)', background: 'rgba(13,43,85,0.95)',
+                color: '#fff', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.4)', cursor: 'pointer',
+                transform: radialOpen ? 'scale(1)' : 'scale(0.3)', opacity: radialOpen ? 1 : 0,
+                transition: 'transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease',
+              }}
+            >
+              ✕
+            </button>
+
+            <div
+              style={{ position: 'fixed', left: '50%', bottom: isDesktop ? 28 : 96, transform: `translateX(-50%) translateY(${radialOpen ? 0 : 10}px)`, opacity: radialOpen ? 1 : 0, transition: 'opacity 0.25s ease 0.15s, transform 0.25s ease 0.15s' }}
+            >
+              <button
+                onClick={(e) => { e.stopPropagation(); const coords = quickPinCoords; setRadialOpen(false); setQuickPinCoords(null); openAddPinModal(coords.lat, coords.lng); }}
+                style={{ padding: '10px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(13,43,85,0.92)', backdropFilter: 'blur(8px)', color: '#9CA3AF', cursor: 'pointer', fontSize: 12 }}
+              >
+                + Ajouter nom / notes
+              </button>
             </div>
-            <button onClick={() => { openAddPinModal(quickPinCoords.lat, quickPinCoords.lng); setQuickPinCoords(null); }} style={{ width: '100%', marginTop: 14, padding: '12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#9CA3AF', cursor: 'pointer', fontSize: 13 }}>+ Ajouter nom / notes</button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Realtime status indicator */}
       {realtimeStatus !== 'disabled' && (

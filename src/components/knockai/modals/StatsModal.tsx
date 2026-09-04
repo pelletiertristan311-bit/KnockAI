@@ -26,7 +26,7 @@ export default function StatsModal() {
     { label: t.typeNotInterested, count: notInterested.length, color: '#EF4444', pct: (notInterested.length / total) * 100 },
     { label: t.typeCallBack, count: callBacks.length, color: '#F59E0B', pct: (callBacks.length / total) * 100 },
     { label: t.typeQuote, count: quotes.length, color: '#A855F7', pct: (quotes.length / total) * 100 },
-    { label: t.typeBusinessCard, count: businessCards.length, color: '#14B8A6', pct: (businessCards.length / total) * 100 },
+    { label: t.typeBusinessCard, count: businessCards.length, color: '#3B82F6', pct: (businessCards.length / total) * 100 },
   ];
 
   return (
@@ -62,8 +62,8 @@ export default function StatsModal() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {todayPins.slice(-5).reverse().map((pin) => {
-            const colors: Record<string, string> = { sale: '#10B981', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
-            const icons: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
+            const colors: Record<string, string> = { sale: '#10B981', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#3B82F6' };
+            const icons: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', quote: '🧾', business_card: '📇' };
             return (
               <div key={pin.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: colors[pin.type], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 800 }}>{icons[pin.type]}</div>

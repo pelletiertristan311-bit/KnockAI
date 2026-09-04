@@ -20,8 +20,8 @@ const MOTIVATIONAL_MESSAGES = [
   "Stay consistent, stay unstoppable! 🔥",
 ];
 
-const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
-const PIN_ICONS: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
+const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#3B82F6' };
+const PIN_ICONS: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', quote: '🧾', business_card: '📇' };
 const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'No Answer', quote: 'Quote', business_card: 'Business Card' };
 
 export default function HomeScreen() {

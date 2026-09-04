@@ -4,8 +4,8 @@ import { useKnockAIStore, PinType } from '@/lib/knockai/store';
 import { ModalSheet } from './AddPinModal';
 import { getPinT } from '@/lib/knockai/pinTranslations';
 
-const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
-const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
+const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#3B82F6' };
+const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', quote: '🧾', business_card: '📇' };
 
 export default function EditPinModal() {
   const { editPinModal, closeEditPinModal, updatePin, deletePin, user } = useKnockAIStore();

@@ -11,8 +11,8 @@ export default function AddPinModal() {
     { type: 'sale', label: t.typeSale, color: '#34D399', icon: '$', desc: t.descSale },
     { type: 'not_interested', label: t.typeNotInterested, color: '#EF4444', icon: '✕', desc: t.descNotInterested },
     { type: 'call_back', label: t.typeCallBack, color: '#F59E0B', icon: '?', desc: t.descCallBack },
-    { type: 'quote', label: t.typeQuote, color: '#A855F7', icon: '"', desc: t.descQuote },
-    { type: 'business_card', label: t.typeBusinessCard, color: '#14B8A6', icon: '📇', desc: t.descBusinessCard },
+    { type: 'quote', label: t.typeQuote, color: '#A855F7', icon: '🧾', desc: t.descQuote },
+    { type: 'business_card', label: t.typeBusinessCard, color: '#3B82F6', icon: '📇', desc: t.descBusinessCard },
   ];
   const [selectedType, setSelectedType] = useState<PinType>('sale');
   const [leadName, setLeadName] = useState('');

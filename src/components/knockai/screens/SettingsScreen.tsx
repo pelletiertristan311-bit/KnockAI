@@ -591,7 +591,7 @@ const PIN_TYPE_LABELS: Record<string, string> = {
   sale: 'Vente', not_interested: 'Non intéressé', call_back: 'Aucune réponse', quote: 'Soumission', business_card: "Carte d'affaire",
 };
 const PIN_TYPE_COLORS: Record<string, string> = {
-  sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6',
+  sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#3B82F6',
 };
 
 function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }: { trashedPins: TrashedPin[]; trashedTeams: TrashedTeam[]; restorePin: (id: string) => void; restoreTeam: (id: string) => void; t: Record<string, string> }) {
@@ -655,7 +655,7 @@ function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }:
           return (
             <div key={pin.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: `${color}22`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color, flexShrink: 0 }}>
-                {pin.type === 'sale' ? '$' : pin.type === 'not_interested' ? '✕' : pin.type === 'call_back' ? '?' : pin.type === 'quote' ? '"' : pin.type === 'business_card' ? '📇' : <Bot size={14} />}
+                {pin.type === 'sale' ? '$' : pin.type === 'not_interested' ? '✕' : pin.type === 'call_back' ? '?' : pin.type === 'quote' ? '🧾' : pin.type === 'business_card' ? '📇' : <Bot size={14} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 2 }}>{PIN_TYPE_LABELS[pin.type] || pin.type}</div>
@@ -929,8 +929,8 @@ const PIN_FILTER_OPTIONS: { value: PinType | 'all'; label: string; emoji: React.
   { value: 'sale', label: 'Ventes', emoji: '$', color: '#34D399' },
   { value: 'not_interested', label: 'Non intéressés', emoji: '✕', color: '#EF4444' },
   { value: 'call_back', label: 'Aucune réponse', emoji: '?', color: '#F59E0B' },
-  { value: 'quote', label: 'Soumissions', emoji: '"', color: '#A855F7' },
-  { value: 'business_card', label: "Cartes d'affaire", emoji: '📇', color: '#14B8A6' },
+  { value: 'quote', label: 'Soumissions', emoji: '🧾', color: '#A855F7' },
+  { value: 'business_card', label: "Cartes d'affaire", emoji: '📇', color: '#3B82F6' },
 ];
 
 function ExportPinsModal({ onClose, pins }: { onClose: () => void; pins: any[] }) {
