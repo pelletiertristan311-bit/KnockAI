@@ -4,13 +4,13 @@ import { useKnockAIStore, PinType } from '@/lib/knockai/store';
 import { ModalSheet } from './AddPinModal';
 import { getPinT } from '@/lib/knockai/pinTranslations';
 
-const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6' };
-const PIN_ICONS: Record<PinType, string> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: 'AI' };
+const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6' };
+const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: 'AI', quote: '"', business_card: '📇' };
 
 export default function EditPinModal() {
   const { editPinModal, closeEditPinModal, updatePin, deletePin, user } = useKnockAIStore();
   const t = getPinT(user?.language);
-  const PIN_LABELS: Record<PinType, string> = { sale: t.typeSale, not_interested: t.typeNotInterested, call_back: t.typeCallBack, ai_knocked: t.typeAiKnocked };
+  const PIN_LABELS: Record<PinType, string> = { sale: t.typeSale, not_interested: t.typeNotInterested, call_back: t.typeCallBack, ai_knocked: t.typeAiKnocked, quote: t.typeQuote, business_card: t.typeBusinessCard };
   const pin = editPinModal.pin!;
   const [type, setType] = useState<PinType>(pin.type);
   const [leadName, setLeadName] = useState(pin.leadName || '');

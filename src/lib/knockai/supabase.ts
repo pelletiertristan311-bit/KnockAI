@@ -30,7 +30,7 @@ export function mapRowToPin(row: Record<string, any>) {
     lat: Number(row.lat),
     lng: Number(row.lng),
     address: row.address || '',
-    type: row.status as 'sale' | 'not_interested' | 'call_back' | 'ai_knocked',
+    type: row.status as 'sale' | 'not_interested' | 'call_back' | 'ai_knocked' | 'quote' | 'business_card',
     notes: row.notes || undefined,
     placedByAi: Boolean(row.placed_by_ai),
     placedAt: row.placed_at || row.created_at || new Date().toISOString(),

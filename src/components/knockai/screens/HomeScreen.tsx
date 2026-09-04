@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { useKnockAIStore } from '@/lib/knockai/store';
+import { useKnockAIStore, localDateKey } from '@/lib/knockai/store';
 import { reverseGeocode } from '@/lib/knockai/geocode';
 import { MapPin, Clock, DoorOpen, DollarSign, Target, Phone, Check, Loader2, Map as MapIcon, BarChart3, Users, Bot } from 'lucide-react';
 
@@ -20,12 +20,12 @@ const MOTIVATIONAL_MESSAGES = [
   "Stay consistent, stay unstoppable! 🔥",
 ];
 
-const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6' };
-const PIN_ICONS: Record<string, React.ReactNode> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: <Bot size={16} /> };
-const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'Call Back', ai_knocked: 'AI Knocked' };
+const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6' };
+const PIN_ICONS: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: <Bot size={16} />, quote: '"', business_card: '📇' };
+const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'No Answer', ai_knocked: 'AI Knocked', quote: 'Quote', business_card: 'Business Card' };
 
 export default function HomeScreen() {
-  const { user, isClockedIn, isPaused, clockInTime, accumulatedSeconds, clockIn, clockOut, pins, sessions, setActiveTab, setSettingsSection, openAddPinModal, openEditPinModal, dailyGoals, setDailyGoals, addPin, team } = useKnockAIStore();
+  const { user, isClockedIn, isPaused, clockInTime, accumulatedSeconds, clockIn, clockOut, pins, sessions, currentSession, setActiveTab, setSettingsSection, openAddPinModal, openEditPinModal, dailyGoals, setDailyGoals, addPin, team } = useKnockAIStore();
   const [elapsed, setElapsed] = useState(() => {
     if (!isClockedIn) return 0;
     if (isPaused || !clockInTime) return accumulatedSeconds;
@@ -66,16 +66,18 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  const today = new Date().toDateString();
-  const nowD = new Date();
-  const todayDateKey = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-${String(nowD.getDate()).padStart(2, '0')}`;
-  const todayPins = pins.filter((p) => new Date(p.placedAt).toDateString() === today);
+  // While clocked in, "today" follows the shift's own day rather than the
+  // calendar date — otherwise a shift that started before midnight and a
+  // pin dropped just after it would disagree about which day owns it (the
+  // completed session is always recorded under its clock-in day).
+  const referenceDateKey = isClockedIn && currentSession ? currentSession.date : localDateKey();
+  const todayPins = pins.filter((p) => localDateKey(new Date(p.placedAt)) === referenceDateKey);
   const doorsToday = todayPins.length;
   const salesToday = todayPins.filter((p) => p.type === 'sale').length;
   const todaySales = salesToday;
 
   const todayCompletedSeconds = sessions
-    .filter((s) => s.userId === user?.id && s.date === todayDateKey && s.clockOutAt)
+    .filter((s) => s.userId === user?.id && s.date === referenceDateKey && s.clockOutAt)
     .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
   const timeWorkedToday = todayCompletedSeconds + (isClockedIn ? elapsed : 0);
   const salesPerHour = timeWorkedToday > 0 ? (todaySales / (timeWorkedToday / 3600)).toFixed(1) : '0.0';

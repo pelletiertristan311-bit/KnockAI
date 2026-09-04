@@ -4,6 +4,7 @@ import { useKnockAIStore, Pin, PinType, type TeamDrawing, type TeamSign, type Li
 import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
 import { reverseGeocode } from '@/lib/knockai/geocode';
 import { cachedFetch } from '@/lib/knockai/geocodeCache';
+import { fetchCivicNumbersQC } from '@/lib/knockai/adressesQuebec';
 import {
   Map as MapIcon, Search, ClipboardList, Eraser, Pencil, Signpost, Lock, Bot,
   User, Users, Crosshair, Trash2, Navigation,
@@ -17,14 +18,17 @@ function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): 
 }
 
 const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: string }[] = [
-  { type: 'sale', label: 'Vente', icon: '✓', color: '#34D399' },
+  { type: 'sale', label: 'Vente', icon: '$', color: '#34D399' },
   { type: 'not_interested', label: 'Non', icon: '✕', color: '#EF4444' },
-  { type: 'call_back', label: 'Rappel', icon: '?', color: '#F59E0B' },
+  { type: 'call_back', label: 'Aucune réponse', icon: '?', color: '#F59E0B' },
+  { type: 'quote', label: 'Soumission', icon: '"', color: '#A855F7' },
+  { type: 'business_card', label: "Carte d'affaire", icon: '📇', color: '#14B8A6' },
   { type: 'ai_knocked', label: 'IA', icon: 'AI', color: '#3B82F6' },
 ];
 
-const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6' };
-const PIN_ICONS: Record<PinType, string> = { sale: '✓', not_interested: '✕', call_back: '?', ai_knocked: 'AI' };
+const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6' };
+const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: 'AI', quote: '"', business_card: '📇' };
+const PIN_SMALL_FONT_TYPES = new Set<PinType>(['ai_knocked']);
 const DRAW_COLORS = ['#EF4444', '#1F2937', '#3B82F6'];
 
 // Falls back to the original hardcoded key so the map doesn't break before
@@ -249,7 +253,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       scaleGroup.style.cssText = `position:absolute;top:0;left:0;width:40px;height:40px;transform-origin:center center;transform:scale(${initialScale});`;
       const inner = document.createElement('div');
       // Own pins: white border / others: subtle purple border
-      inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${pin.type === 'ai_knocked' ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
+      inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${PIN_SMALL_FONT_TYPES.has(pin.type) ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
       inner.textContent = PIN_ICONS[pin.type];
       scaleGroup.appendChild(inner);
       const civicNumber = pin.address?.match(/^\d+/)?.[0];
@@ -299,12 +303,36 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     });
   }, [signs, mapLoaded]);
 
-  // Civic house numbers from OpenStreetMap via Overpass API
+  // Numéros civiques — Adresses Québec (base officielle gouvernementale) en
+  // priorité, avec repli sur Overpass/OpenStreetMap si le point est hors
+  // Québec ou si le service gouvernemental est indisponible. Adresses
+  // Québec est plus complet et à jour qu'OSM (moins de maisons manquantes
+  // ou mal placées), notamment dans les zones où OSM est peu cartographié.
   useEffect(() => {
     if (!mapInstance.current || mapStyleVersion === 0) return;
     const map = mapInstance.current;
     let abortCtrl: AbortController | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const loadFromOverpass = async (bbox: string, signal: AbortSignal) => {
+      const q = `[out:json][timeout:8];(way["addr:housenumber"](${bbox});node["addr:housenumber"](${bbox}););out center;`;
+      return cachedFetch(`civic:${bbox}`, async () => {
+        const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`, { signal });
+        if (!res.ok) throw new Error('overpass request failed');
+        const data = await res.json();
+        if (!data.elements || data.elements.length > 500) return [];
+        return (data.elements as any[])
+          .map((el) => {
+            const num = el.tags?.['addr:housenumber'];
+            if (!num) return null;
+            const lat = el.type === 'node' ? el.lat : el.center?.lat;
+            const lon = el.type === 'node' ? el.lon : el.center?.lon;
+            if (!lat || !lon) return null;
+            return { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [lon, lat] }, properties: { n: num } };
+          })
+          .filter(Boolean);
+      });
+    };
 
     const load = async () => {
       const src = map.getSource('civic-numbers');
@@ -315,29 +343,21 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const b = map.getBounds();
       // Rounded to ~11m so panning back over an already-fetched area (very
       // common while working a block) reuses the cached response instead of
-      // re-hitting Overpass.
-      const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
-      const q = `[out:json][timeout:8];(way["addr:housenumber"](${bbox});node["addr:housenumber"](${bbox}););out center;`;
+      // re-hitting the address services.
+      const south = b.getSouth(), west = b.getWest(), north = b.getNorth(), east = b.getEast();
+      const bbox = `${south.toFixed(4)},${west.toFixed(4)},${north.toFixed(4)},${east.toFixed(4)}`;
 
       if (abortCtrl) abortCtrl.abort();
       abortCtrl = new AbortController();
       try {
-        const features = await cachedFetch(`civic:${bbox}`, async () => {
-          const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`, { signal: abortCtrl!.signal });
-          if (!res.ok) throw new Error('overpass request failed');
-          const data = await res.json();
-          if (!data.elements || data.elements.length > 500) return [];
-          return (data.elements as any[])
-            .map((el) => {
-              const num = el.tags?.['addr:housenumber'];
-              if (!num) return null;
-              const lat = el.type === 'node' ? el.lat : el.center?.lat;
-              const lon = el.type === 'node' ? el.lon : el.center?.lon;
-              if (!lat || !lon) return null;
-              return { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [lon, lat] }, properties: { n: num } };
-            })
-            .filter(Boolean);
-        });
+        let features: any[];
+        try {
+          const civicNumbers = await fetchCivicNumbersQC(south, west, north, east, abortCtrl.signal);
+          features = civicNumbers.map((c) => ({ type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [c.lon, c.lat] }, properties: { n: c.civic } }));
+        } catch {
+          // Hors Québec ou service gouvernemental indisponible — repli OSM.
+          features = await loadFromOverpass(bbox, abortCtrl.signal);
+        }
         if (!abortCtrl.signal.aborted) src.setData({ type: 'FeatureCollection', features });
       } catch { /* abort or network error — silent */ }
     };
@@ -777,15 +797,15 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       )}
 
       {/* Filter bar */}
-      <div data-tour="map-filter" style={{ position: 'absolute', top: 16, left: 12, right: 12, display: 'flex', gap: 6, zIndex: 10 }}>
-        <button onClick={() => setPinFilter('all')} style={{ flex: 1, padding: '7px 4px', borderRadius: 10, border: 'none', cursor: 'pointer', background: pinFilter === 'all' ? '#1A6FD6' : 'rgba(13,43,85,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+      <div data-tour="map-filter" style={{ position: 'absolute', top: 16, left: 12, right: 12, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, zIndex: 10 }}>
+        <button onClick={() => setPinFilter('all')} style={{ padding: '7px 4px', borderRadius: 10, border: 'none', cursor: 'pointer', background: pinFilter === 'all' ? '#1A6FD6' : 'rgba(13,43,85,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <div style={{ display: 'flex', gap: 2 }}><div style={{ width: 7, height: 7, borderRadius: '50%', background: '#34D399' }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444' }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: '#F59E0B' }} /></div>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>All</span>
         </button>
         {QUICK_PIN_TYPES.map(({ type, label, icon, color }) => (
-          <button key={type} onClick={() => setPinFilter(type)} style={{ flex: 1, padding: '7px 4px', borderRadius: 10, border: `2px solid ${pinFilter === type ? color : 'transparent'}`, cursor: 'pointer', background: pinFilter === type ? `${color}33` : 'rgba(13,43,85,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-            <div style={{ width: 22, height: 22, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: type === 'ai_knocked' ? 9 : 13 }}>{icon}</div>
-            <span style={{ fontSize: 9, fontWeight: 700, color }}>{label}</span>
+          <button key={type} onClick={() => setPinFilter(type)} style={{ padding: '7px 4px', borderRadius: 10, border: `2px solid ${pinFilter === type ? color : 'transparent'}`, cursor: 'pointer', background: pinFilter === type ? `${color}33` : 'rgba(13,43,85,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: PIN_SMALL_FONT_TYPES.has(type) ? 9 : 13 }}>{icon}</div>
+            <span style={{ fontSize: 9, fontWeight: 700, color, textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
           </button>
         ))}
       </div>
@@ -1098,7 +1118,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           <div style={{ width: '100%', maxWidth: isDesktop ? 640 : 430, background: '#0D2B55', borderRadius: '20px 20px 0 0', padding: isDesktop ? '20px 28px 32px' : '16px 20px 36px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
             <p style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, marginBottom: 16 }}>Quel type de pin ?</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               {QUICK_PIN_TYPES.map(({ type, label, icon, color }) => (
                 <button key={type} disabled={geocoding} onClick={async () => {
                   const coords = quickPinCoords;
@@ -1108,7 +1128,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
                   setGeocoding(false);
                   addPin({ lat: coords.lat, lng: coords.lng, address, type, placedByAi: false });
                 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 14, border: `2px solid ${color}44`, background: `${color}18`, cursor: geocoding ? 'default' : 'pointer', opacity: geocoding ? 0.6 : 1 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: type === 'ai_knocked' ? 9 : 16 }}>{icon}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: PIN_SMALL_FONT_TYPES.has(type) ? 9 : 16 }}>{icon}</div>
                   <span style={{ fontSize: 11, fontWeight: 700, color, textAlign: 'center' }}>{label}</span>
                 </button>
               ))}

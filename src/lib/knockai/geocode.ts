@@ -1,8 +1,19 @@
 import { cachedFetch } from './geocodeCache';
+import { reverseGeocodeQC } from './adressesQuebec';
 
 // Shared implementation — was previously copy-pasted identically in
 // MapScreen.tsx and AddPinModal.tsx.
+//
+// Tries "Adresses Québec" (base officielle gouvernementale) first — plus
+// précise et plus à jour que Nominatim/OSM dans les zones que ce dernier
+// couvre mal (ex: Vaudreuil-Soulanges). Ça ne couvre que le Québec, donc on
+// retombe sur Nominatim si ça échoue ou si le point est hors Québec.
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const qc = await reverseGeocodeQC(lat, lng);
+    if (qc) return qc;
+  } catch { /* hors Québec ou service indisponible — repli sur Nominatim */ }
+
   const key = `rg:${lat.toFixed(5)},${lng.toFixed(5)}`;
   try {
     return await cachedFetch(key, async () => {

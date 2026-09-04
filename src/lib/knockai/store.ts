@@ -23,7 +23,7 @@ async function syncTeamToRedis(teamId: string, teamMembers: object[], teamDates:
   } catch { /* offline */ }
 }
 
-function localDateKey(d: Date = new Date()): string {
+export function localDateKey(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -37,7 +37,7 @@ async function pollTeamFromRedis(teamId: string): Promise<any | null> {
   } catch { return null; }
 }
 
-export type PinType = 'sale' | 'not_interested' | 'call_back' | 'ai_knocked';
+export type PinType = 'sale' | 'not_interested' | 'call_back' | 'ai_knocked' | 'quote' | 'business_card';
 export type UserRole = 'member' | 'manager' | 'owner';
 
 export interface TrashedPin extends Pin { deletedAt: string; }
