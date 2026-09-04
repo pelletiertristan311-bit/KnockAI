@@ -5,6 +5,7 @@ import { type RealtimeStatus } from '@/hooks/knockai/useTeamPins';
 import { reverseGeocode } from '@/lib/knockai/geocode';
 import { cachedFetch } from '@/lib/knockai/geocodeCache';
 import { fetchCivicNumbersQC } from '@/lib/knockai/adressesQuebec';
+import { compressImage } from '@/lib/knockai/compressImage';
 import {
   Map as MapIcon, Search, ClipboardList, Eraser, Pencil, Signpost, Lock,
   User, Users, Crosshair, Trash2, Navigation, Camera, Hand, Loader2,
@@ -15,31 +16,6 @@ function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): 
   const toRad = (v: number) => v * Math.PI / 180;
   const a = Math.sin(toRad(lat2 - lat1) / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Downscales + re-encodes a captured photo before it's stored — a raw phone
-// photo can be several MB; a yard sign is legible at a fraction of that.
-function compressImage(dataUrl: string, maxDim = 1280, quality = 0.75): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('no canvas context')); return; }
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => reject(new Error('image load failed'));
-    img.src = dataUrl;
-  });
 }
 
 const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: string }[] = [
@@ -62,6 +38,27 @@ const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || 'l7T65duPkEOuA9Ji3c
 
 // Teammates' drawings are shown in bright red to distinguish from own
 const TEAMMATE_DRAWING_COLOR = '#FF3B30';
+
+// MapTiler's streets-v2/-dark styles ship a "Building 3D" fill-extrusion
+// layer already (source-layer 'building', render_height/render_min_height),
+// but at 0.4 opacity it barely reads as 3D. This bumps it up and — for the
+// light theme — recolors it plus water/greenery to a warmer, less "raw GIS"
+// palette (closer to Apple/Google Maps' look). Layer ids here are MapTiler's
+// actual (capitalized) ids — the previous water/park overrides below used
+// lowercase generic OSM names ('water', 'park') that don't exist in this
+// style, so they were silently no-ops (wrapped in try/catch).
+function applyMapVisualStyle(map: any, theme: 'light' | 'dark') {
+  try { map.setPaintProperty('Building 3D', 'fill-extrusion-opacity', 0.9); } catch (_) {}
+  try { map.setPaintProperty('Building', 'fill-opacity', 0.6); } catch (_) {}
+  if (theme === 'light') {
+    try { map.setPaintProperty('Building 3D', 'fill-extrusion-color', '#D6D1C4'); } catch (_) {}
+    try { map.setPaintProperty('Building', 'fill-color', '#D6D1C4'); } catch (_) {}
+    try { map.setPaintProperty('Water', 'fill-color', '#A9D8EA'); } catch (_) {}
+    try { map.setPaintProperty('River', 'line-color', '#A9D8EA'); } catch (_) {}
+    ['Grass', 'Meadow'].forEach((l) => { try { map.setPaintProperty(l, 'fill-color', '#BEE3A4'); } catch (_) {} });
+    ['Wood', 'Forest'].forEach((l) => { try { map.setPaintProperty(l, 'fill-color', '#AFDB93'); } catch (_) {} });
+  }
+}
 
 function addMapLayers(map: any) {
   // Civic house numbers via Overpass — rendered as WebGL symbol layer below HTML pins
@@ -192,13 +189,11 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const initCenter: [number, number] = initLoc ? [initLoc.lng, initLoc.lat] : [-73.5673, 45.5017];
       const styleUrl = initTheme === 'dark' ? `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}` : `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
       try {
-        const map = new ml.Map({ container: mapRef.current!, style: styleUrl, center: initCenter, zoom: 15, attributionControl: false });
+        const map = new ml.Map({ container: mapRef.current!, style: styleUrl, center: initCenter, zoom: 15, pitch: 45, attributionControl: false });
         let loaded = false;
         map.on('load', () => {
           loaded = true;
-          try { map.setPaintProperty('water', 'fill-color', '#C5E8FF'); } catch (_) {}
-          try { map.setPaintProperty('waterway', 'line-color', '#C5E8FF'); } catch (_) {}
-          ['park', 'landuse_park', 'landcover_grass', 'grass', 'landuse_grass', 'landuse-park'].forEach((layer) => { try { map.setPaintProperty(layer, 'fill-color', '#adc4ad'); } catch (_) {} });
+          applyMapVisualStyle(map, initTheme === 'dark' ? 'dark' : 'light');
           addMapLayers(map);
           setMapLoaded(true);
           setMapStyleVersion((v) => v + 1);
@@ -257,10 +252,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     const styleUrl = mapTheme === 'dark' ? `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}` : `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
     map.setStyle(styleUrl);
     map.once('style.load', () => {
-      if (mapTheme === 'light') {
-        try { map.setPaintProperty('water', 'fill-color', '#C5E8FF'); } catch (_) {}
-        ['park', 'landuse_park', 'landcover_grass', 'grass'].forEach((l) => { try { map.setPaintProperty(l, 'fill-color', '#adc4ad'); } catch (_) {} });
-      }
+      applyMapVisualStyle(map, mapTheme === 'dark' ? 'dark' : 'light');
       addMapLayers(map);
       setMapStyleVersion((v) => v + 1);
     });
@@ -496,7 +488,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       const heading = loc.heading;
 
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'position:relative;width:54px;height:66px;cursor:pointer;display:flex;flex-direction:column;align-items:center;';
+      wrapper.style.cssText = 'position:relative;width:54px;cursor:pointer;display:flex;flex-direction:column;align-items:center;';
 
       // Pulsing neon ring
       const ring = document.createElement('div');
@@ -523,6 +515,13 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         arrow.style.cssText = `width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid #00BFFF;margin-top:2px;filter:drop-shadow(0 0 3px #00BFFF);transform:rotate(${heading}deg);transform-origin:center top;flex-shrink:0;`;
         wrapper.appendChild(arrow);
       }
+
+      // Persistent name label (first name only, to keep the map uncluttered)
+      const firstName = name.split(' ')[0];
+      const nameLabel = document.createElement('div');
+      nameLabel.textContent = firstName;
+      nameLabel.style.cssText = 'margin-top:4px;padding:2px 8px;border-radius:8px;background:rgba(13,43,85,0.9);color:#fff;font-size:11px;font-weight:700;font-family:Inter,sans-serif;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 5px rgba(0,0,0,0.45);border:1px solid rgba(0,191,255,0.4);';
+      wrapper.appendChild(nameLabel);
 
       wrapper.addEventListener('click', async (e) => {
         e.stopPropagation();
