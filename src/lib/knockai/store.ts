@@ -630,14 +630,33 @@ export const useKnockAIStore = create<KnockAIState>()(
       },
 
       unclaimTeamDate: (dateId) => {
-        const { user } = get();
+        const { user, teamDates } = get();
         if (!user) return;
+        const target = teamDates.find((d) => d.id === dateId);
+        if (!target) return;
+        const canUnclaim = target.claimedBy === user.id || user.role === 'owner' || user.role === 'manager';
+        if (!canUnclaim) return;
+
+        // If this was the last claimed slot in the day group, the city lock
+        // it imposed on sibling slots no longer applies — otherwise a wrong
+        // or cancelled booking leaves the whole group's city stuck forever
+        // with no way to correct it short of deleting the dates.
+        const groupId = target.dayGroupId;
+        const otherClaimedInGroup = groupId
+          ? teamDates.some((d) => d.dayGroupId === groupId && d.id !== dateId && d.claimedBy)
+          : false;
+        const shouldUnlockGroup = !!groupId && !otherClaimedInGroup;
+
         set((state) => ({
-          teamDates: state.teamDates.map((d) =>
-            d.id === dateId && (d.claimedBy === user.id || user.role === 'owner' || user.role === 'manager')
-              ? { ...d, claimedBy: undefined, claimedByName: undefined, claimedAt: undefined }
-              : d
-          ),
+          teamDates: state.teamDates.map((d) => {
+            if (d.id === dateId) {
+              return { ...d, claimedBy: undefined, claimedByName: undefined, claimedAt: undefined, ...(shouldUnlockGroup && { cityLocked: false, city: '' }) };
+            }
+            if (shouldUnlockGroup && groupId && d.dayGroupId === groupId) {
+              return { ...d, cityLocked: false, city: '' };
+            }
+            return d;
+          }),
         }));
         const s = get();
         if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === s.user?.id), s.trailPoints.filter((p) => p.userId === s.user?.id));
@@ -812,7 +831,15 @@ export const useKnockAIStore = create<KnockAIState>()(
         const { user } = get();
         if (!user) return;
         const tp: TrailPoint = { ...point, timestamp: new Date().toISOString(), userId: user.id };
-        set((state) => ({ trailPoints: [...state.trailPoints, tp] }));
+        // Trails are for showing recent/today's movement, not a permanent
+        // history — without pruning this array (and the full-history payload
+        // re-sent to Redis on every single point) grows without bound for
+        // any regularly-active user, eventually hitting localStorage/sync
+        // size limits. Keep a rolling 48h window.
+        const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+        set((state) => ({
+          trailPoints: [...state.trailPoints.filter((p) => new Date(p.timestamp).getTime() >= cutoff), tp],
+        }));
         const s = get();
         if (s.team?.id) syncTeamToRedis(s.team.id, s.teamMembers, s.teamDates, s.routes, s.team, s.pins.filter((p) => p.userId === user.id), s.trailPoints.filter((p) => p.userId === user.id));
       },
