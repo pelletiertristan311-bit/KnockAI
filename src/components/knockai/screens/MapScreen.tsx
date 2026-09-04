@@ -7,7 +7,7 @@ import { cachedFetch } from '@/lib/knockai/geocodeCache';
 import { fetchCivicNumbersQC } from '@/lib/knockai/adressesQuebec';
 import {
   Map as MapIcon, Search, ClipboardList, Eraser, Pencil, Signpost, Lock,
-  User, Users, Crosshair, Trash2, Navigation,
+  User, Users, Crosshair, Trash2, Navigation, Camera, Hand, Loader2,
 } from 'lucide-react';
 
 function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -15,6 +15,31 @@ function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): 
   const toRad = (v: number) => v * Math.PI / 180;
   const a = Math.sin(toRad(lat2 - lat1) / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Downscales + re-encodes a captured photo before it's stored — a raw phone
+// photo can be several MB; a yard sign is legible at a fraction of that.
+function compressImage(dataUrl: string, maxDim = 1280, quality = 0.75): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('no canvas context')); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = dataUrl;
+  });
 }
 
 const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: string }[] = [
@@ -92,7 +117,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const isDrawingErasingRef = useRef(false);
   const drawingsRef = useRef<TeamDrawing[]>([]);
   const signMarkersRef = useRef<any[]>([]);
-  const isSignsModeRef = useRef(false);
 
   const [followMode, setFollowMode] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,9 +141,13 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
   const [streetDrawingPoints, setStreetDrawingPoints] = useState<[number, number][]>([]);
   const [drawingColor, setDrawingColor] = useState('#EF4444');
 
-  const [isSignsMode, setIsSignsMode] = useState(false);
-  const [signPendingCoords, setSignPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [signLabelInput, setSignLabelInput] = useState('');
+  const [signCapturing, setSignCapturing] = useState(false);
+  const [signError, setSignError] = useState('');
+  const [signCapture, setSignCapture] = useState<{ lat: number; lng: number; photoDataUrl: string; address: string } | null>(null);
+  const [signNoteInput, setSignNoteInput] = useState('');
+  const [savingSign, setSavingSign] = useState(false);
+  const signCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const signPhotoInputRef = useRef<HTMLInputElement>(null);
   const [selectedSign, setSelectedSign] = useState<TeamSign | null>(null);
   const [showSignsList, setShowSignsList] = useState(false);
   const [selectedLiveLoc, setSelectedLiveLoc] = useState<{ loc: LiveLocation; address: string | null } | null>(null);
@@ -127,7 +155,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
 
   drawingColorRef.current = drawingColor;
   isDrawingErasingRef.current = isDrawingErasing;
-  isSignsModeRef.current = isSignsMode;
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -197,8 +224,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               const next = [...drawingPointsRef.current, pt];
               drawingPointsRef.current = next;
               setDrawingPoints([...next]);
-            } else if (isSignsModeRef.current) {
-              setSignPendingCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
             } else {
               setQuickPinCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
             }
@@ -707,28 +732,75 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     if (dotsSrc) dotsSrc.setData({ type: 'FeatureCollection', features: [] });
   };
 
-  const handleSignsToggle = () => {
-    if (!isManagerOrOwner) return;
-    if (isSignsMode) {
-      setIsSignsMode(false);
-    } else {
-      if (isStreetDrawing) cancelStreetDrawing();
-      if (isDrawingErasing) exitErasing();
-      setIsSignsMode(true);
+  // New sign flow: tap the button -> grab current GPS (you're standing at
+  // the sign) -> open the camera -> the photo you take becomes the marker.
+  // No more manually tapping the map to place it.
+  const handleAddSignClick = () => {
+    if (!isManagerOrOwner || signCapturing) return;
+    if (isStreetDrawing) cancelStreetDrawing();
+    if (isDrawingErasing) exitErasing();
+    if (!navigator.geolocation) { setSignError("La géolocalisation n'est pas disponible sur cet appareil."); return; }
+    setSignError('');
+    setSignCapturing(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        signCoordsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        signPhotoInputRef.current?.click();
+        // capturing stays true until a photo is picked or the picker is
+        // cancelled (no reliable cancel event, so we clear it once the
+        // photo is processed or after a generous timeout)
+        setTimeout(() => setSignCapturing(false), 60000);
+      },
+      () => { setSignCapturing(false); setSignError('Position GPS refusée ou indisponible — impossible de localiser le panneau.'); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSignPhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    const coords = signCoordsRef.current;
+    setSignCapturing(false);
+    if (!file || !coords) return;
+    try {
+      const rawDataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('read failed'));
+        reader.readAsDataURL(file);
+      });
+      const photoDataUrl = await compressImage(rawDataUrl);
+      const address = await reverseGeocode(coords.lat, coords.lng);
+      setSignCapture({ lat: coords.lat, lng: coords.lng, photoDataUrl, address });
+    } catch {
+      setSignError("Échec du traitement de la photo — réessaie.");
     }
   };
 
-  const saveSignMarker = (coords: { lat: number; lng: number }, label: string) => {
-    if (!team?.id || !user?.id) return;
+  const handleSaveSignCapture = () => {
+    if (!signCapture || !team?.id || !user?.id) return;
+    setSavingSign(true);
     const sign: TeamSign = {
       id: `sign-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       teamId: team.id, userId: user.id, userName: user.fullName || '',
-      lat: coords.lat, lng: coords.lng, label, createdAt: new Date().toISOString(),
+      lat: signCapture.lat, lng: signCapture.lng,
+      label: signNoteInput.trim() || signCapture.address,
+      photoUrl: signCapture.photoDataUrl,
+      createdAt: new Date().toISOString(),
     };
     addTeamSign(sign);
+    setSavingSign(false);
+    setSignCapture(null);
+    setSignNoteInput('');
   };
 
-  const deleteSignById = (id: string) => {
+  const handleCancelSignCapture = () => {
+    setSignCapture(null);
+    setSignNoteInput('');
+  };
+
+  // "Ramasser" — picking the physical sign back up removes its marker.
+  const pickUpSign = (id: string) => {
     removeTeamSign(id);
   };
 
@@ -851,15 +923,18 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
           )}
         </div>
 
-        {/* Signs mode button — managers/owners only can place; everyone sees the list */}
+        {/* Add sign button — managers/owners only. Taking the photo places
+            the marker; there's no more "tap the map" mode. */}
         <div style={{ position: 'relative' }}>
-          <button onClick={isManagerOrOwner ? handleSignsToggle : undefined} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${isSignsMode ? 'rgba(0,191,255,0.6)' : 'rgba(0,102,204,0.2)'}`, background: isSignsMode ? 'rgba(0,191,255,0.18)' : 'rgba(13,43,85,0.9)', color: isSignsMode ? '#00BFFF' : isManagerOrOwner ? '#fff' : '#4B5563', cursor: isManagerOrOwner ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', boxShadow: isSignsMode ? '0 0 10px rgba(0,191,255,0.3)' : 'none', opacity: isManagerOrOwner ? 1 : 0.55 }}>
-            <Signpost size={14} />
-            <span style={{ fontSize: 7, fontWeight: 700, display: 'flex' }}>{isManagerOrOwner ? 'Signs' : <Lock size={9} />}</span>
+          <input ref={signPhotoInputRef} type="file" accept="image/*" capture="environment" onChange={handleSignPhotoSelected} style={{ display: 'none' }} />
+          <button onClick={isManagerOrOwner ? handleAddSignClick : undefined} disabled={signCapturing} style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid rgba(0,102,204,0.2)', background: 'rgba(13,43,85,0.9)', color: isManagerOrOwner ? '#fff' : '#4B5563', cursor: isManagerOrOwner && !signCapturing ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', opacity: isManagerOrOwner ? 1 : 0.55 }}>
+            {signCapturing ? <Loader2 size={14} className="spin" /> : <Camera size={14} />}
+            <span style={{ fontSize: 7, fontWeight: 700, display: 'flex' }}>{isManagerOrOwner ? 'Sign' : <Lock size={9} />}</span>
           </button>
-          {isSignsMode && (
-            <div style={{ position: 'absolute', right: 48, top: 0, padding: '8px 12px', borderRadius: 12, background: 'rgba(13,43,85,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,191,255,0.35)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', whiteSpace: 'nowrap' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#00BFFF' }}>Tap map to drop a sign</div>
+          {signError && (
+            <div style={{ position: 'absolute', right: 48, top: 0, padding: '8px 12px', borderRadius: 12, background: 'rgba(239,68,68,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', maxWidth: 220 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{signError}</div>
+              <button onClick={() => setSignError('')} style={{ marginTop: 4, background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 11, cursor: 'pointer', padding: 0 }}>OK</button>
             </div>
           )}
         </div>
@@ -924,17 +999,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             </div>
           )}
         </>
-      )}
-
-      {/* Signs mode banner */}
-      {isSignsMode && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(0,148,200,0.95)', padding: '12px 16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Signpost size={14} /> Signs mode — tap to drop</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>Tap anywhere on the map to place a sign marker</div>
-          </div>
-          <button onClick={() => setIsSignsMode(false)} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>Done</button>
-        </div>
       )}
 
       {/* Eraser mode banner */}
@@ -1006,39 +1070,38 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </div>
       )}
 
-      {/* Add Sign modal */}
-      {signPendingCoords && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }}>
-          <div style={{ width: '100%', maxWidth: 340, background: '#0D2B55', borderRadius: 20, padding: '24px 20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      {/* Confirm new sign — photo just taken, GPS already captured at that moment */}
+      {signCapture && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={handleCancelSignCapture}>
+          <div style={{ width: '100%', maxWidth: 360, background: '#0D2B55', borderRadius: 20, padding: '20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Signpost size={22} color="#00BFFF" />
-                <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#00BFFF' }}>New Sign</h2>
+                <Signpost size={20} color="#00BFFF" />
+                <h2 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: '#00BFFF' }}>Nouveau panneau</h2>
               </div>
-              <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} aria-label="Close" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
+              <button onClick={handleCancelSignCapture} aria-label="Close" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
             </div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', color: '#9CA3AF', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Label or note (optional)</label>
+            <img src={signCapture.photoDataUrl} alt="Panneau" style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 12, marginBottom: 12 }} />
+            <div style={{ fontSize: 12, color: '#8B92A5', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><MapIcon size={12} /> {signCapture.address}</div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', color: '#9CA3AF', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Note (optionnel)</label>
               <input
                 autoFocus
-                value={signLabelInput}
-                onChange={(e) => setSignLabelInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { saveSignMarker(signPendingCoords, signLabelInput.trim()); setSignPendingCoords(null); setSignLabelInput(''); } }}
-                placeholder="e.g. No Soliciting street, HOA block..."
+                value={signNoteInput}
+                onChange={(e) => setSignNoteInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSignCapture(); }}
+                placeholder="ex: rue no soliciting, bloc HOA..."
                 style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(0,191,255,0.3)', background: 'rgba(0,191,255,0.05)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
-            {isManagerOrOwner ? (
-              <button
-                onClick={() => { saveSignMarker(signPendingCoords, signLabelInput.trim()); setSignPendingCoords(null); setSignLabelInput(''); }}
-                style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #0094C8, #00BFFF)', color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 8, boxShadow: '0 4px 14px rgba(0,191,255,0.35)' }}
-              >
-                Save Sign
-              </button>
-            ) : (
-              <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', color: '#4B5563', fontSize: 14, textAlign: 'center', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Lock size={14} /> Only managers and owners can place signs</div>
-            )}
-            <button onClick={() => { setSignPendingCoords(null); setSignLabelInput(''); }} style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.07)', color: '#9CA3AF', fontSize: 14 }}>Cancel</button>
+            <button
+              onClick={handleSaveSignCapture}
+              disabled={savingSign}
+              style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #0094C8, #00BFFF)', color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 8, boxShadow: '0 4px 14px rgba(0,191,255,0.35)' }}
+            >
+              {savingSign ? 'Enregistrement...' : 'Placer sur la carte'}
+            </button>
+            <button onClick={handleCancelSignCapture} style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.07)', color: '#9CA3AF', fontSize: 14 }}>Annuler</button>
           </div>
         </div>
       )}
@@ -1046,9 +1109,12 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       {/* Selected Sign popup */}
       {selectedSign && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, backdropFilter: 'blur(4px)', padding: '24px 16px' }} onClick={() => setSelectedSign(null)}>
-          <div style={{ width: '100%', maxWidth: 320, background: '#0D2B55', borderRadius: 20, padding: '22px 20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ width: '100%', maxWidth: 340, background: '#0D2B55', borderRadius: 20, padding: '20px', border: '1px solid rgba(0,191,255,0.25)', boxShadow: '0 0 32px rgba(0,191,255,0.15)' }} onClick={(e) => e.stopPropagation()}>
+            {selectedSign.photoUrl && (
+              <img src={selectedSign.photoUrl} alt={selectedSign.label || 'Panneau'} style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 12, marginBottom: 12 }} />
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <Signpost size={28} color="#00BFFF" />
+              {!selectedSign.photoUrl && <Signpost size={28} color="#00BFFF" />}
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#00BFFF' }}>{selectedSign.label || 'Sign'}</div>
                 <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>{new Date(selectedSign.createdAt).toLocaleDateString()} · {selectedSign.lat.toFixed(5)}, {selectedSign.lng.toFixed(5)}</div>
@@ -1063,10 +1129,10 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
               </button>
               {isManagerOrOwner && (
                 <button
-                  onClick={() => { deleteSignById(selectedSign.id); setSelectedSign(null); }}
+                  onClick={() => { pickUpSign(selectedSign.id); setSelectedSign(null); }}
                   style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(239,68,68,0.15)', color: '#EF4444', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  <Trash2 size={15} /> Delete
+                  <Hand size={15} /> Ramasser
                 </button>
               )}
             </div>
@@ -1083,19 +1149,23 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#00BFFF', display: 'flex', alignItems: 'center', gap: 8 }}><Signpost size={18} /> Signs ({signs.length})</div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {signs.length === 0 ? (
-                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>No signs yet. Tap <Signpost size={16} /> to enter Signs mode and drop one.</p>
+                <p style={{ color: '#4B5563', fontSize: 14, textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>Aucun panneau. Tape <Camera size={16} /> pour en photographier un.</p>
               ) : signs.map((sign) => (
-                <div key={sign.id} style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(0,191,255,0.06)', border: '1px solid rgba(0,191,255,0.15)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <span style={{ display: 'flex', flexShrink: 0, color: '#00BFFF' }}><Signpost size={20} /></span>
+                <button key={sign.id} onClick={() => { setSelectedSign(sign); setShowSignsList(false); }} style={{ width: '100%', padding: '12px 14px', borderRadius: 14, background: 'rgba(0,191,255,0.06)', border: 'none', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer', textAlign: 'left' }}>
+                  {sign.photoUrl ? (
+                    <img src={sign.photoUrl} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <span style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0,191,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#00BFFF' }}><Signpost size={20} /></span>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sign.label || 'Sign'}</div>
                     <div style={{ fontSize: 11, color: '#8B92A5', marginTop: 2 }}>{new Date(sign.createdAt).toLocaleDateString()}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => { mapInstance.current?.flyTo({ center: [sign.lng, sign.lat], zoom: 17, duration: 800 }); setShowSignsList(false); }} aria-label="Fly to" style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'rgba(0,191,255,0.15)', color: '#00BFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Crosshair size={16} /></button>
-                    {isManagerOrOwner && <button onClick={() => { deleteSignById(sign.id); }} aria-label="Delete sign" style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'rgba(239,68,68,0.12)', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>}
+                    <span onClick={(e) => { e.stopPropagation(); mapInstance.current?.flyTo({ center: [sign.lng, sign.lat], zoom: 17, duration: 800 }); setShowSignsList(false); }} role="button" aria-label="Fly to" style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(0,191,255,0.15)', color: '#00BFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Crosshair size={16} /></span>
+                    {isManagerOrOwner && <span onClick={(e) => { e.stopPropagation(); pickUpSign(sign.id); }} role="button" aria-label="Ramasser" style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(239,68,68,0.12)', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Hand size={16} /></span>}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

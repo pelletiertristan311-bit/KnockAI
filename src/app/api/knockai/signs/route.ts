@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
       lat: Number(row.lat),
       lng: Number(row.lng),
       label: row.label || '',
+      photoUrl: row.photo_url || undefined,
       createdAt: row.created_at || new Date().toISOString(),
     }));
     return NextResponse.json({ ok: true, signs });
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       lat: sign.lat,
       lng: sign.lng,
       label: sign.label || '',
+      photo_url: sign.photoUrl || null,
       created_at: sign.createdAt,
     });
 

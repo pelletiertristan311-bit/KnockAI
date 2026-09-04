@@ -150,6 +150,7 @@ export interface TeamSign {
   lat: number;
   lng: number;
   label: string;
+  photoUrl?: string;
   createdAt: string;
 }
 

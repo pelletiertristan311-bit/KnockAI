@@ -14,6 +14,7 @@ function mapRowToSign(row: Record<string, any>): TeamSign {
     lat: Number(row.lat),
     lng: Number(row.lng),
     label: row.label || '',
+    photoUrl: row.photo_url || undefined,
     createdAt: row.created_at || new Date().toISOString(),
   };
 }
