@@ -588,10 +588,10 @@ function AccountModal({ onClose, user, updateUser, onChangePassword, t }: any) {
 ══════════════════════════════════════════════════════════════ */
 
 const PIN_TYPE_LABELS: Record<string, string> = {
-  sale: 'Vente', not_interested: 'Non intéressé', call_back: 'Aucune réponse', ai_knocked: 'IA Knocké', quote: 'Soumission', business_card: "Carte d'affaire",
+  sale: 'Vente', not_interested: 'Non intéressé', call_back: 'Aucune réponse', quote: 'Soumission', business_card: "Carte d'affaire",
 };
 const PIN_TYPE_COLORS: Record<string, string> = {
-  sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6',
+  sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6',
 };
 
 function TrashSection({ trashedPins, trashedTeams, restorePin, restoreTeam, t }: { trashedPins: TrashedPin[]; trashedTeams: TrashedTeam[]; restorePin: (id: string) => void; restoreTeam: (id: string) => void; t: Record<string, string> }) {
@@ -931,7 +931,6 @@ const PIN_FILTER_OPTIONS: { value: PinType | 'all'; label: string; emoji: React.
   { value: 'call_back', label: 'Aucune réponse', emoji: '?', color: '#F59E0B' },
   { value: 'quote', label: 'Soumissions', emoji: '"', color: '#A855F7' },
   { value: 'business_card', label: "Cartes d'affaire", emoji: '📇', color: '#14B8A6' },
-  { value: 'ai_knocked', label: 'IA Knocké', emoji: <Bot size={14} />, color: '#3B82F6' },
 ];
 
 function ExportPinsModal({ onClose, pins }: { onClose: () => void; pins: any[] }) {

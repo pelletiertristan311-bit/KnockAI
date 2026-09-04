@@ -13,7 +13,6 @@ export default function AddPinModal() {
     { type: 'call_back', label: t.typeCallBack, color: '#F59E0B', icon: '?', desc: t.descCallBack },
     { type: 'quote', label: t.typeQuote, color: '#A855F7', icon: '"', desc: t.descQuote },
     { type: 'business_card', label: t.typeBusinessCard, color: '#14B8A6', icon: '📇', desc: t.descBusinessCard },
-    { type: 'ai_knocked', label: t.typeAiKnocked, color: '#3B82F6', icon: 'AI', desc: t.descAiKnocked },
   ];
   const [selectedType, setSelectedType] = useState<PinType>('sale');
   const [leadName, setLeadName] = useState('');
@@ -38,7 +37,7 @@ export default function AddPinModal() {
         {PIN_TYPES.map(({ type, label, color, icon, desc }) => (
           <button key={type} onClick={() => setSelectedType(type)} style={{ padding: '12px', borderRadius: 12, border: `2px solid ${selectedType === type ? color : 'rgba(255,255,255,0.08)'}`, background: selectedType === type ? `${color}22` : 'rgba(255,255,255,0.03)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: type === 'ai_knocked' ? 9 : 14 }}>{icon}</div>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 14 }}>{icon}</div>
               <span style={{ fontSize: 13, fontWeight: 600, color: selectedType === type ? color : '#fff' }}>{label}</span>
             </div>
             <div style={{ fontSize: 11, color: '#8B92A5' }}>{desc}</div>

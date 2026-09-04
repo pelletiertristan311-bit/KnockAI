@@ -32,7 +32,6 @@ const STEPS: TourStep[] = [
   { tab: 'team',     selector: '[data-tour="team-tab-leaderboard"]',title: '🏆 Classement',              desc: "Qui mène aujourd'hui? Portes et ventes classées en temps réel. Un peu de compétition saine!",                                    padding: 6 },
   // ── MAP ───────────────────────────────────────────────────
   { tab: 'map',      selector: '[data-tour="map-filter"]',          title: '🏷️ Filtrer les pins',        desc: "Affiche seulement les Ventes 🟢, Aucune réponse 🟡 ou Non-intéressés 🔴 pour cibler tes follow-ups.",                                  padding: 6 },
-  { tab: 'map',      selector: '[data-tour="map-ai"]',              title: '🤖 Intelligence Artificielle',desc: "L'IA analyse ton historique et suggère la meilleure zone à prospecter aujourd'hui. Appuie pour voir la recommandation.",          padding: 8 },
   { tab: 'map',      selector: '[data-tour="map-area"]',            title: '📍 Poser un pin',            desc: "Appuie n'importe où sur la carte pour logger une porte. Choisis le résultat (Vente, Aucune réponse, Non...) instantanément.",            padding: 0 },
   // ── SETTINGS ──────────────────────────────────────────────
   { tab: 'settings', selector: '[data-tour="settings-profile"]',    title: '👤 Ton profil',              desc: "Modifie ton nom et ta photo visibles par toute l'équipe. Tap le crayon ✏️ pour éditer.",                                          padding: 6 },

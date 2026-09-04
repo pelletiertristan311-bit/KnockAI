@@ -3,8 +3,8 @@
 
 export interface PinT {
   addPinTitle: string; editPinTitle: string; statsTitle: string;
-  typeSale: string; typeNotInterested: string; typeCallBack: string; typeAiKnocked: string; typeQuote: string; typeBusinessCard: string;
-  descSale: string; descNotInterested: string; descCallBack: string; descAiKnocked: string; descQuote: string; descBusinessCard: string;
+  typeSale: string; typeNotInterested: string; typeCallBack: string; typeQuote: string; typeBusinessCard: string;
+  descSale: string; descNotInterested: string; descCallBack: string; descQuote: string; descBusinessCard: string;
   leadName: string; leadNameOptional: string; phone: string; phoneOptional: string;
   notes: string; notesPlaceholder: string;
   save: string; saving: string; savePinPrefix: string;
@@ -17,8 +17,8 @@ export interface PinT {
 export const PIN_T: Record<string, PinT> = {
   en: {
     addPinTitle: 'Add Pin', editPinTitle: 'Edit Pin', statsTitle: "Today's Stats",
-    typeSale: 'Sale', typeNotInterested: 'Not Interested', typeCallBack: 'No Answer', typeAiKnocked: 'AI Knocked', typeQuote: 'Quote', typeBusinessCard: 'Business Card',
-    descSale: 'Deal confirmed', descNotInterested: 'Said no', descCallBack: 'No one answered', descAiKnocked: 'AI-assisted marker', descQuote: 'Price quote given', descBusinessCard: 'Left a business card',
+    typeSale: 'Sale', typeNotInterested: 'Not Interested', typeCallBack: 'No Answer', typeQuote: 'Quote', typeBusinessCard: 'Business Card',
+    descSale: 'Deal confirmed', descNotInterested: 'Said no', descCallBack: 'No one answered', descQuote: 'Price quote given', descBusinessCard: 'Left a business card',
     leadName: 'Lead Name', leadNameOptional: 'Lead Name (optional)', phone: 'Phone', phoneOptional: 'Phone Number (optional)',
     notes: 'Notes', notesPlaceholder: 'Add notes about this visit...',
     save: 'Save Changes', saving: 'Saving...', savePinPrefix: 'Save',
@@ -29,8 +29,8 @@ export const PIN_T: Record<string, PinT> = {
   },
   fr: {
     addPinTitle: 'Ajouter un pin', editPinTitle: 'Modifier le pin', statsTitle: "Stats du jour",
-    typeSale: 'Vente', typeNotInterested: 'Non intéressé', typeCallBack: 'Aucune réponse', typeAiKnocked: 'IA Knocké', typeQuote: 'Soumission', typeBusinessCard: "Carte d'affaire",
-    descSale: 'Vente confirmée', descNotInterested: 'A refusé', descCallBack: "Personne n'a répondu", descAiKnocked: 'Marqueur assisté par IA', descQuote: 'Soumission remise', descBusinessCard: "Carte d'affaire laissée",
+    typeSale: 'Vente', typeNotInterested: 'Non intéressé', typeCallBack: 'Aucune réponse', typeQuote: 'Soumission', typeBusinessCard: "Carte d'affaire",
+    descSale: 'Vente confirmée', descNotInterested: 'A refusé', descCallBack: "Personne n'a répondu", descQuote: 'Soumission remise', descBusinessCard: "Carte d'affaire laissée",
     leadName: 'Nom du lead', leadNameOptional: 'Nom du lead (optionnel)', phone: 'Téléphone', phoneOptional: 'Numéro de téléphone (optionnel)',
     notes: 'Notes', notesPlaceholder: 'Ajouter des notes sur cette visite...',
     save: 'Enregistrer', saving: 'Enregistrement...', savePinPrefix: 'Enregistrer',
@@ -41,8 +41,8 @@ export const PIN_T: Record<string, PinT> = {
   },
   es: {
     addPinTitle: 'Añadir pin', editPinTitle: 'Editar pin', statsTitle: 'Estadísticas de hoy',
-    typeSale: 'Venta', typeNotInterested: 'No interesado', typeCallBack: 'Sin respuesta', typeAiKnocked: 'IA tocada', typeQuote: 'Cotización', typeBusinessCard: 'Tarjeta de presentación',
-    descSale: 'Venta confirmada', descNotInterested: 'Dijo que no', descCallBack: 'Nadie respondió', descAiKnocked: 'Marcador asistido por IA', descQuote: 'Cotización entregada', descBusinessCard: 'Tarjeta de presentación dejada',
+    typeSale: 'Venta', typeNotInterested: 'No interesado', typeCallBack: 'Sin respuesta', typeQuote: 'Cotización', typeBusinessCard: 'Tarjeta de presentación',
+    descSale: 'Venta confirmada', descNotInterested: 'Dijo que no', descCallBack: 'Nadie respondió', descQuote: 'Cotización entregada', descBusinessCard: 'Tarjeta de presentación dejada',
     leadName: 'Nombre del cliente', leadNameOptional: 'Nombre del cliente (opcional)', phone: 'Teléfono', phoneOptional: 'Número de teléfono (opcional)',
     notes: 'Notas', notesPlaceholder: 'Añade notas sobre esta visita...',
     save: 'Guardar cambios', saving: 'Guardando...', savePinPrefix: 'Guardar',

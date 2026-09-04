@@ -37,7 +37,7 @@ async function pollTeamFromRedis(teamId: string): Promise<any | null> {
   } catch { return null; }
 }
 
-export type PinType = 'sale' | 'not_interested' | 'call_back' | 'ai_knocked' | 'quote' | 'business_card';
+export type PinType = 'sale' | 'not_interested' | 'call_back' | 'quote' | 'business_card';
 export type UserRole = 'member' | 'manager' | 'owner';
 
 export interface TrashedPin extends Pin { deletedAt: string; }
@@ -201,7 +201,6 @@ interface KnockAIState {
   mapZoom: number;
   userLocation: { lat: number; lng: number } | null;
   pinFilter: PinType | 'all';
-  aiEnabled: boolean;
 
   addPinModal: { open: boolean; lat?: number; lng?: number };
   editPinModal: { open: boolean; pin?: Pin };
@@ -237,7 +236,6 @@ interface KnockAIState {
   deleteRoute: (id: string) => void;
   setUserLocation: (loc: { lat: number; lng: number }) => void;
   setPinFilter: (filter: KnockAIState['pinFilter']) => void;
-  toggleAI: () => void;
   openAddPinModal: (lat?: number, lng?: number) => void;
   closeAddPinModal: () => void;
   openEditPinModal: (pin: Pin) => void;
@@ -332,7 +330,6 @@ export const useKnockAIStore = create<KnockAIState>()(
       mapZoom: 17,
       userLocation: null,
       pinFilter: 'all',
-      aiEnabled: true,
       addPinModal: { open: false },
       editPinModal: { open: false },
       statsModal: false,
@@ -574,7 +571,6 @@ export const useKnockAIStore = create<KnockAIState>()(
 
       setUserLocation: (loc) => set({ userLocation: loc }),
       setPinFilter: (filter) => set({ pinFilter: filter }),
-      toggleAI: () => set((state) => ({ aiEnabled: !state.aiEnabled })),
 
       openAddPinModal: (lat, lng) => set({ addPinModal: { open: true, lat, lng } }),
       closeAddPinModal: () => set({ addPinModal: { open: false } }),
@@ -1023,7 +1019,6 @@ export const useKnockAIStore = create<KnockAIState>()(
         team: state.team,
         teamMembers: state.teamMembers,
         teamDates: state.teamDates,
-        aiEnabled: state.aiEnabled,
         notifications: state.notifications,
         mapTheme: state.mapTheme,
         trailPoints: state.trailPoints,

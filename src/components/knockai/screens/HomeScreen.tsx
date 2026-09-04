@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useKnockAIStore, localDateKey } from '@/lib/knockai/store';
 import { reverseGeocode } from '@/lib/knockai/geocode';
-import { MapPin, Clock, DoorOpen, DollarSign, Target, Phone, Check, Loader2, Map as MapIcon, BarChart3, Users, Bot } from 'lucide-react';
+import { MapPin, Clock, DoorOpen, DollarSign, Target, Phone, Check, Loader2, Map as MapIcon, BarChart3, Users } from 'lucide-react';
 
 function formatTime(seconds: number) {
   const h = Math.floor(seconds / 3600);
@@ -20,9 +20,9 @@ const MOTIVATIONAL_MESSAGES = [
   "Stay consistent, stay unstoppable! 🔥",
 ];
 
-const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6' };
-const PIN_ICONS: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: <Bot size={16} />, quote: '"', business_card: '📇' };
-const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'No Answer', ai_knocked: 'AI Knocked', quote: 'Quote', business_card: 'Business Card' };
+const PIN_COLORS: Record<string, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
+const PIN_ICONS: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
+const PIN_LABELS: Record<string, string> = { sale: 'Sale', not_interested: 'Not Interested', call_back: 'No Answer', quote: 'Quote', business_card: 'Business Card' };
 
 export default function HomeScreen() {
   const { user, isClockedIn, isPaused, clockInTime, accumulatedSeconds, clockIn, clockOut, pins, sessions, currentSession, setActiveTab, setSettingsSection, openAddPinModal, openEditPinModal, dailyGoals, setDailyGoals, addPin, team } = useKnockAIStore();

@@ -4,13 +4,13 @@ import { useKnockAIStore, PinType } from '@/lib/knockai/store';
 import { ModalSheet } from './AddPinModal';
 import { getPinT } from '@/lib/knockai/pinTranslations';
 
-const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6' };
-const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: 'AI', quote: '"', business_card: '📇' };
+const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
+const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
 
 export default function EditPinModal() {
   const { editPinModal, closeEditPinModal, updatePin, deletePin, user } = useKnockAIStore();
   const t = getPinT(user?.language);
-  const PIN_LABELS: Record<PinType, string> = { sale: t.typeSale, not_interested: t.typeNotInterested, call_back: t.typeCallBack, ai_knocked: t.typeAiKnocked, quote: t.typeQuote, business_card: t.typeBusinessCard };
+  const PIN_LABELS: Record<PinType, string> = { sale: t.typeSale, not_interested: t.typeNotInterested, call_back: t.typeCallBack, quote: t.typeQuote, business_card: t.typeBusinessCard };
   const pin = editPinModal.pin!;
   const [type, setType] = useState<PinType>(pin.type);
   const [leadName, setLeadName] = useState(pin.leadName || '');
@@ -36,7 +36,7 @@ export default function EditPinModal() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
         {(Object.keys(PIN_COLORS) as PinType[]).map((pt) => (
           <button key={pt} onClick={() => setType(pt)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 20, border: `2px solid ${type === pt ? PIN_COLORS[pt] : 'rgba(255,255,255,0.1)'}`, background: type === pt ? `${PIN_COLORS[pt]}22` : 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: type === pt ? PIN_COLORS[pt] : '#9CA3AF', transition: 'all 0.2s' }}>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', background: PIN_COLORS[pt], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: pt === 'ai_knocked' ? 7 : 11, fontWeight: 800 }}>{PIN_ICONS[pt]}</div>
+            <div style={{ width: 20, height: 20, borderRadius: '50%', background: PIN_COLORS[pt], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800 }}>{PIN_ICONS[pt]}</div>
             {PIN_LABELS[pt]}
           </button>
         ))}

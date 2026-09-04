@@ -2,7 +2,6 @@
 import { useKnockAIStore, localDateKey } from '@/lib/knockai/store';
 import { ModalSheet } from './AddPinModal';
 import { getPinT } from '@/lib/knockai/pinTranslations';
-import { Bot } from 'lucide-react';
 
 export default function StatsModal() {
   const { setStatsModal, pins, isClockedIn, clockInTime, currentSession, user } = useKnockAIStore();
@@ -15,7 +14,6 @@ export default function StatsModal() {
   const sales = todayPins.filter((p) => p.type === 'sale');
   const notInterested = todayPins.filter((p) => p.type === 'not_interested');
   const callBacks = todayPins.filter((p) => p.type === 'call_back');
-  const aiKnocked = todayPins.filter((p) => p.type === 'ai_knocked');
   const quotes = todayPins.filter((p) => p.type === 'quote');
   const businessCards = todayPins.filter((p) => p.type === 'business_card');
   const elapsed = isClockedIn && clockInTime ? Math.floor((Date.now() - new Date(clockInTime).getTime()) / 1000) : 0;
@@ -29,7 +27,6 @@ export default function StatsModal() {
     { label: t.typeCallBack, count: callBacks.length, color: '#F59E0B', pct: (callBacks.length / total) * 100 },
     { label: t.typeQuote, count: quotes.length, color: '#A855F7', pct: (quotes.length / total) * 100 },
     { label: t.typeBusinessCard, count: businessCards.length, color: '#14B8A6', pct: (businessCards.length / total) * 100 },
-    { label: t.typeAiKnocked, count: aiKnocked.length, color: '#0066CC', pct: (aiKnocked.length / total) * 100 },
   ];
 
   return (
@@ -65,8 +62,8 @@ export default function StatsModal() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {todayPins.slice(-5).reverse().map((pin) => {
-            const colors: Record<string, string> = { sale: '#10B981', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#0066CC', quote: '#A855F7', business_card: '#14B8A6' };
-            const icons: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: <Bot size={14} />, quote: '"', business_card: '📇' };
+            const colors: Record<string, string> = { sale: '#10B981', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
+            const icons: Record<string, React.ReactNode> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
             return (
               <div key={pin.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: colors[pin.type], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 800 }}>{icons[pin.type]}</div>

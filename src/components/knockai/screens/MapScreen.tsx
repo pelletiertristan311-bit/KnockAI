@@ -6,7 +6,7 @@ import { reverseGeocode } from '@/lib/knockai/geocode';
 import { cachedFetch } from '@/lib/knockai/geocodeCache';
 import { fetchCivicNumbersQC } from '@/lib/knockai/adressesQuebec';
 import {
-  Map as MapIcon, Search, ClipboardList, Eraser, Pencil, Signpost, Lock, Bot,
+  Map as MapIcon, Search, ClipboardList, Eraser, Pencil, Signpost, Lock,
   User, Users, Crosshair, Trash2, Navigation,
 } from 'lucide-react';
 
@@ -23,12 +23,10 @@ const QUICK_PIN_TYPES: { type: PinType; label: string; icon: string; color: stri
   { type: 'call_back', label: 'Aucune réponse', icon: '?', color: '#F59E0B' },
   { type: 'quote', label: 'Soumission', icon: '"', color: '#A855F7' },
   { type: 'business_card', label: "Carte d'affaire", icon: '📇', color: '#14B8A6' },
-  { type: 'ai_knocked', label: 'IA', icon: 'AI', color: '#3B82F6' },
 ];
 
-const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', ai_knocked: '#3B82F6', quote: '#A855F7', business_card: '#14B8A6' };
-const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', ai_knocked: 'AI', quote: '"', business_card: '📇' };
-const PIN_SMALL_FONT_TYPES = new Set<PinType>(['ai_knocked']);
+const PIN_COLORS: Record<PinType, string> = { sale: '#34D399', not_interested: '#EF4444', call_back: '#F59E0B', quote: '#A855F7', business_card: '#14B8A6' };
+const PIN_ICONS: Record<PinType, string> = { sale: '$', not_interested: '✕', call_back: '?', quote: '"', business_card: '📇' };
 const DRAW_COLORS = ['#EF4444', '#1F2937', '#3B82F6'];
 
 // Falls back to the original hardcoded key so the map doesn't break before
@@ -139,8 +137,8 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
     return () => mq.removeEventListener('change', h);
   }, []);
 
-  const { pins, routes, userLocation, pinFilter, aiEnabled, teamMembers, user, team, liveLocations,
-    setUserLocation, setPinFilter, toggleAI, openAddPinModal, openEditPinModal, addPin,
+  const { pins, routes, userLocation, pinFilter, teamMembers, user, team, liveLocations,
+    setUserLocation, setPinFilter, openAddPinModal, openEditPinModal, addPin,
     addRoute, deleteRoute, mapTheme, teamDrawings, addTeamDrawing, removeTeamDrawing,
     teamSigns, addTeamSign, removeTeamSign } = useKnockAIStore();
 
@@ -253,7 +251,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
       scaleGroup.style.cssText = `position:absolute;top:0;left:0;width:40px;height:40px;transform-origin:center center;transform:scale(${initialScale});`;
       const inner = document.createElement('div');
       // Own pins: white border / others: subtle purple border
-      inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${PIN_SMALL_FONT_TYPES.has(pin.type) ? '10px' : '16px'};box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
+      inner.style.cssText = `width:40px;height:40px;border-radius:50%;background:${PIN_COLORS[pin.type]};border:3px solid ${isOwn ? 'white' : '#C4B5FD'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;box-shadow:0 2px 8px ${PIN_COLORS[pin.type]}66;font-family:Inter,sans-serif;transition:transform 0.15s;`;
       inner.textContent = PIN_ICONS[pin.type];
       scaleGroup.appendChild(inner);
       const civicNumber = pin.address?.match(/^\d+/)?.[0];
@@ -804,7 +802,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         </button>
         {QUICK_PIN_TYPES.map(({ type, label, icon, color }) => (
           <button key={type} onClick={() => setPinFilter(type)} style={{ padding: '7px 4px', borderRadius: 10, border: `2px solid ${pinFilter === type ? color : 'transparent'}`, cursor: 'pointer', background: pinFilter === type ? `${color}33` : 'rgba(13,43,85,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-            <div style={{ width: 22, height: 22, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: PIN_SMALL_FONT_TYPES.has(type) ? 9 : 13 }}>{icon}</div>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 13 }}>{icon}</div>
             <span style={{ fontSize: 9, fontWeight: 700, color, textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
           </button>
         ))}
@@ -870,14 +868,6 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
         <button onClick={() => setShowSignsList(!showSignsList)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${showSignsList ? 'rgba(0,191,255,0.5)' : 'rgba(0,102,204,0.2)'}`, background: showSignsList ? 'rgba(0,191,255,0.15)' : 'rgba(13,43,85,0.9)', color: showSignsList ? '#00BFFF' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backdropFilter: 'blur(8px)', fontSize: 16 }}>
           <Signpost size={14} />
           <span style={{ fontSize: 7, fontWeight: 700 }}>List</span>
-        </button>
-      </div>
-
-      {/* AI toggle */}
-      <div data-tour="map-ai" style={{ position: 'absolute', bottom: 24, right: 12, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-        <button onClick={toggleAI} style={{ width: 56, height: 56, borderRadius: 28, border: 'none', cursor: 'pointer', background: aiEnabled ? '#3B82F6' : '#374151', color: '#fff', boxShadow: aiEnabled ? '0 4px 16px rgba(0,102,204,0.5)' : 'none', transition: 'all 0.3s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          <Bot size={16} />
-          <span style={{ fontSize: 9, fontWeight: 800 }}>{aiEnabled ? 'AI ON' : 'AI OFF'}</span>
         </button>
       </div>
 
@@ -1128,7 +1118,7 @@ export default function MapScreen({ realtimeStatus = 'disabled' }: { realtimeSta
                   setGeocoding(false);
                   addPin({ lat: coords.lat, lng: coords.lng, address, type, placedByAi: false });
                 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 14, border: `2px solid ${color}44`, background: `${color}18`, cursor: geocoding ? 'default' : 'pointer', opacity: geocoding ? 0.6 : 1 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: PIN_SMALL_FONT_TYPES.has(type) ? 9 : 16 }}>{icon}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>{icon}</div>
                   <span style={{ fontSize: 11, fontWeight: 700, color, textAlign: 'center' }}>{label}</span>
                 </button>
               ))}

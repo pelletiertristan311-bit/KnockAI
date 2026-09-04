@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { PinType } from './store';
 
 let _client: SupabaseClient | null = null;
 
@@ -30,7 +31,7 @@ export function mapRowToPin(row: Record<string, any>) {
     lat: Number(row.lat),
     lng: Number(row.lng),
     address: row.address || '',
-    type: row.status as 'sale' | 'not_interested' | 'call_back' | 'ai_knocked' | 'quote' | 'business_card',
+    type: row.status as PinType,
     notes: row.notes || undefined,
     placedByAi: Boolean(row.placed_by_ai),
     placedAt: row.placed_at || row.created_at || new Date().toISOString(),

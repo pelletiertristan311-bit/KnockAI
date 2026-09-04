@@ -13,4 +13,4 @@
 ALTER TABLE public.pins DROP CONSTRAINT IF EXISTS pins_status_check;
 
 ALTER TABLE public.pins ADD CONSTRAINT pins_status_check
-  CHECK (status IN ('sale', 'not_interested', 'call_back', 'ai_knocked', 'quote', 'business_card'));
+  CHECK (status IN ('sale', 'not_interested', 'call_back', 'quote', 'business_card'));
